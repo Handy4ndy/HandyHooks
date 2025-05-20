@@ -26,8 +26,8 @@ Use these online tools to develop, test, and deploy Hooks—no local setup requi
 - **[XRPLWin Xahau Testnet Tools](https://xahau-testnet.xrplwin.com/tools)**: Create and test transactions.
 - **[XRPLWin Hook Management](https://xahau-testnet.xrplwin.com/account/YOUR_WALLET_RADDRESS_HERE/manage/hooks)**: Deploy and manage Hooks (replace `YOUR_WALLET_RADDRESS_HERE` with your account, e.g., `rTest123...`).
 - **[Xahau Testnet Faucet](https://xahau-test.net/faucet)**: Fund Testnet accounts.
-- **[Xahau Explorer](https://explorer.xahau-test.net)**: Verify transactions and Hook details.
-- **[XRPL Hex Visualizer](https://xrplwin.com/tools/hex)**: Convert parameters (e.
+- **[Xahau Explorer](https://test.xahauexplorer.com/en)**: Verify transactions and Hook details.
+- **[XRPL Hex Visualizer](https://transia-rnd.github.io/xrpl-hex-visualizer/)**: Convert parameters (e.
 
 ### Example Hook: URI Token Mint Hook
 - **File**: `uriRemit.c`
