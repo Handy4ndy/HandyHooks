@@ -26,8 +26,8 @@ Use these online tools to develop, test, and deploy Hooks—no local setup requi
 - **[XRPLWin Xahau Testnet Tools](https://xahau-testnet.xrplwin.com/tools)**: Create and test transactions.
 - **[XRPLWin Hook Management](https://xahau-testnet.xrplwin.com/account/YOUR_WALLET_RADDRESS_HERE/manage/hooks)**: Deploy and manage Hooks (replace `YOUR_WALLET_RADDRESS_HERE` with your account, e.g., `rTest123...`).
 - **[Xahau Testnet Faucet](https://xahau-test.net/faucet)**: Fund Testnet accounts.
-- **[Xahau Explorer](https://explorer.xahau-test.net)**: Verify transactions and Hook details.
-- **[XRPL Hex Visualizer](https://xrplwin.com/tools/hex)**: Convert parameters (e.
+- **[Xahau Explorer](https://test.xahauexplorer.com/en)**: Verify transactions and Hook details.
+- **[XRPL Hex Visualizer](https://transia-rnd.github.io/xrpl-hex-visualizer/)**: Convert parameters (e.
 
 ### Example Hook: URI Token Mint Hook
 - **File**: `uriRemit.c`
@@ -74,7 +74,7 @@ Use these online tools to develop, test, and deploy Hooks—no local setup requi
       ...networkInfo.txValues
     };
     ```
-  - See the [uriRemit README](xMerch_/README.md) for details.
+  - See the original [uriRemit README](https://github.com/Cbot-XRPL/URI-Token-Remit/blob/main/README.md) for details.
 
 - **Test Cases**:
   - Incoming XAH Payment (matching `COST`): Mints URI Token, deletes state.
@@ -106,9 +106,6 @@ Use these online tools to develop, test, and deploy Hooks—no local setup requi
   - `Execution failure`: Use `uint8_t amount[48]` for `sfAmount` and check `otxn_field` returns.
   - URI length errors: Use XRPL Hex Visualizer for consistent `URIL`.
 - **State Tracking**: Monitor state with XRPLWin Hook Testnet.
-
-## License
-This project is licensed under the [Creative Commons Legal Code CC0 1.0 Universal](LICENSE). Use, edit, and distribute freely.
 
 ## Contributing
 Integrate these Hooks into your e-commerce platforms or contribute new ones! Submit issues or PRs to enhance **HandyHooks**. For educational Hooks, see [Xahau Hooks 101](Xahau-Hooks-101/README.md).
