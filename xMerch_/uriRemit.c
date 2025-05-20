@@ -82,9 +82,7 @@ uint8_t txn[60000] =
 } while(0) 
 // clang-format on
 
-
 // START OF THE HOOK ACTIVATION -----------------------------------------------------------------------------------------
-
 
 int64_t hook(uint32_t reserved) {
 
@@ -128,27 +126,26 @@ uint64_t lnum = 0x00000000000F423C;
 uint8_t lnum_buf[8] = {0};
 UINT64_TO_BUF(lnum_buf, lnum);
 
-    // COUNT state number
-    uint64_t conum = 0x00000000000F423B;
-    uint8_t conum_buf[8] = {0};
-    UINT64_TO_BUF(conum_buf, conum);
+// COUNT state number
+uint64_t conum = 0x00000000000F423B;
+uint8_t conum_buf[8] = {0};
+UINT64_TO_BUF(conum_buf, conum);
 
-    // Set up the counter
-    int64_t count = 0;
-    int8_t hasCount = state(&count, sizeof(count), conum_buf, sizeof(conum_buf));
+// Set up the counter
+int64_t count = 0;
+int8_t hasCount = state(&count, sizeof(count), conum_buf, sizeof(conum_buf));
 
-    // Set up count param
-    uint8_t count_param_buf[8] = {0};  // Use a buffer for fetching the parameter
-    uint8_t count_key[5] = {'C', 'O', 'U', 'N', 'T'};  // Parameter key
+// Set up count param
+uint8_t count_param_buf[8] = {0};  // Use a buffer for fetching the parameter
+uint8_t count_key[5] = {'C', 'O', 'U', 'N', 'T'};  // Parameter key
 
-    // Fetch the parameter into the buffer
-    int8_t isCount = otxn_param(count_param_buf, sizeof(count_param_buf), SBUF(count_key));
-    TRACEHEX(count_param_buf);  // Debug the raw buffer
+// Fetch the parameter into the buffer
+int8_t isCount = otxn_param(count_param_buf, sizeof(count_param_buf), SBUF(count_key));
+TRACEHEX(count_param_buf);  // Debug the raw buffer
 
-    // Convert the buffer to an integer
-    uint64_t count_param = UINT64_FROM_BUF(count_param_buf);
-    TRACEVAR(count_param);  // Log the converted integer
-
+// Convert the buffer to an integer
+uint64_t count_param = UINT64_FROM_BUF(count_param_buf);
+TRACEVAR(count_param);  // Log the converted integer
 
 uint8_t cost_buf[8];
 uint8_t cost_key[4] = { 'C', 'O', 'S','T'};
@@ -178,14 +175,11 @@ int8_t isRoyalties = otxn_param(roy_buf, 8, roy_key, sizeof(roy_key));
 uint64_t roy_int = UINT64_FROM_BUF(roy_buf);
 int64_t small_amount = float_set(-1, roy_int);
 
-
-
 // Configure URIL and URI ----------------------------------------------------------------
 uint8_t uril_buf[8];
 uint8_t uril_key[4] = { 'U', 'R', 'I', 'L' };
 int8_t isUril = otxn_param(SBUF(uril_buf), SBUF(uril_key));
 uint64_t uri_len = UINT64_FROM_BUF(uril_buf);
-
 
 // URIL state buffer
  uint8_t ulbuf[8]={0};
@@ -206,8 +200,6 @@ rollback(SBUF("Error: This hook is missing a URIL! Please add a URIL to start bu
 uri_buffer[0] = reconstructed_uril_value;
 int8_t isUri2 = otxn_param(uri_buffer + 1,reconstructed_uril_value, SBUF(uri_key));
 
-
-
 // HOOK LOCK -----------------------------------------------------------------------------------------  
 
 // Check if hook_accid and account_field are the same
@@ -223,7 +215,6 @@ if(tt == 00 && !equal && isLock > 0){
     TRACEVAR(tt);
    rollback(SBUF("Error: Only the owner of this hook can change its settings!!"), 2);
 };
-
 
 // Lock state buffer
  uint8_t lbuf[8]={0};
@@ -248,7 +239,6 @@ TRACESTR("passkey hook is now unlocked.");
 
 // HookOn: Invoke Set LOCK State -----------------------------------------------------------------------------------------
 
-
 if (tt == 99 && isLock > 0){ 
 
 TRACESTR("Ran invoke to set lock");
@@ -262,7 +252,6 @@ if (state_set(SBUF(lock_buf), SBUF(lnum_buf)) < 0)
 accept(SBUF("Success: Set the LOCK state."), __LINE__);
 
 }
-
 
 // HookOn: Invoke Set COST State -----------------------------------------------------------------------------------------
 
@@ -279,14 +268,13 @@ accept(SBUF("Success: Set the COST state."), __LINE__);
 
 }
 
-
-// HookOn: Invoke Set COUNT State --s--------------------------------------------------------------------------------------
+// HookOn: Invoke Set COUNT State ----------------------------------------------------------------------------------------
 
 
 if (tt == 99 && isCount > 0){ 
 
 
-                      //data                  //number key
+                      //data         //number key
    #define SBUF(str) (uint32_t)(str), sizeof(str)
 if (state_set(SBUF(&count_param), SBUF(conum_buf)) < 0)
 		rollback(SBUF("Error: Could not set COUNT state!"), 1);
@@ -294,8 +282,6 @@ if (state_set(SBUF(&count_param), SBUF(conum_buf)) < 0)
 accept(SBUF("Success: Set the COUNT state."), __LINE__);
 
 }
-
-
 
 // HookOn: Invoke Set URIL State -----------------------------------------------------------------------------------------
 
@@ -311,7 +297,6 @@ accept(SBUF("Success: Set the URIL state."), __LINE__);
 
 }
 
-    
 // HookOn: Invoke Set URI State -----------------------------------------------------------------------------------------
 
 
@@ -332,7 +317,6 @@ if (state_set(SBUF(uri_buffer), SBUF(num_buf)) < 0)
 
 accept(SBUF("Success: Set a URI state."), __LINE__);
 }
-
 
 // HookOn: Invoke Delete State -----------------------------------------------------------------------------------------
 
@@ -361,7 +345,6 @@ accept(SBUF("Success: Deleted the state."), __LINE__);
 
 }
 
-
 // HookOn: Incoming Royalties Invoke  -----------------------------------------------------------------------------------------
 
 
@@ -374,7 +357,6 @@ if (state_set(&small_amount, sizeof(small_amount), royalty_key, sizeof(royalty_k
 accept(SBUF("Success: Set the ROY state."), __LINE__);
 
 }
-
 
 // // HookOn: Incoming Payment Gateway  -----------------------------------------------------------------------------------------
 
