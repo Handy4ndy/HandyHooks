@@ -1,76 +1,106 @@
-# ForwardSplit Hook
+# HandyHooks - ForwardSplit.c
 
-This hook is set on a payment to a configuration hook, that forwards a percentage of all XAH payments. **1% is reserved in the hook account to self-fund transactions.**
+Welcome to **HandyHooks**, a collection of pre-built Xahau Hooks for production use on the Xahau Network, tailored for e-commerce platforms. This repository hosts Hooks designed for real-world applications, alongside the educational **Xahau Hooks 101** series. Written in C and compiled to WebAssembly (WASM) using the [Xahau Hooks Builder](https://hooks-builder.xrpl.org/develop) starter template, all Hooks are Mainnet-ready and freely available for use, modification, and distribution. Each Hook includes a dedicated `README` with installation instructions and details.
 
-## Overview
+## What is Xahau?
 
-The hook is designed to forward incoming payments to three predefined accounts:
+Xahau is a decentralized blockchain platform that delivers secure, efficient, and transparent transactions through its immutable ledger. It’s ideal for e-commerce, financial automation, and asset management.
 
-- **Main Account** - "M" (HEX_AccountID)
-- **Second Account** - "S" (HEX_AccountID)
-- **Third Account** - "T" (HEX_AccountID)
+## What are Hooks?
 
-You can convert r-addresses to account IDs using the following tool:  
-[https://hooks.services/tools/raddress-to-accountid](https://hooks.services/tools/raddress-to-accountid)
+Hooks are small, efficient C programs attached to Xahau accounts, enabling automated actions like payment processing, token minting, or state management. Executed on the Xahau Network, Hooks support both Testnet and Mainnet, making them perfect for e-commerce solutions.
 
-The percentages are set with the following hook parameters:
+## About Hook Builder
 
-- **Main Amount** - "MA" (HEX_FLIPPED)
-- **Secondary Amount** - "SA" (HEX_FLIPPED)
-- **Third Amount** - "TA" (HEX_FLIPPED)
+[Xahau Hooks Builder](https://hooks-builder.xrpl.org/develop) is a web-based tool that simplifies Hook development, offering:
+- A code editor for C Hooks.
+- Testnet simulation for testing.
+- One-click deployment to Testnet or Mainnet.
 
-You can convert decimal percentages to hex and flip them using the following tool:  
-[https://hooks.services/tools/decimal-to-hex-to-fliphex](https://hooks.services/tools/decimal-to-hex-to-fliphex)
+All Hooks in this repository are compiled using the Hooks Builder starter template, ensuring Mainnet compatibility.
 
-## Hook Workflow
+## Tools
+Use these online tools to develop, test, and deploy Hooks—no local setup required:
+- **[Xahau Hooks Builder](https://hooks-builder.xrpl.org/develop)**: Write, compile, and deploy Hooks using the starter template.
+- **[XRPLWin Xahau Testnet Tools](https://xahau-testnet.xrplwin.com/tools)**: Create and test transactions.
+- **[XRPLWin Hook Management](https://xahau-testnet.xrplwin.com/account/YOUR_WALLET_RADDRESS_HERE/manage/hooks)**: Deploy and manage Hooks (replace `YOUR_WALLET_RADDRESS_HERE` with your account, e.g., `rTest123...`).
+- **[Xahau Testnet Faucet](https://xahau-test.net/faucet)**: Fund Testnet accounts.
+- **[Xahau Explorer](https://xahauexplorer.com/en)**: Verify transactions and Hook details.
+- **[XRPL Hex Visualizer](https://transia-rnd.github.io/xrpl-hex-visualizer/)**: Convert parameters (e.g., account IDs, percentages).
+- **[R-Address to AccountID](https://hooks.services/tools/raddress-to-accountid)**: Convert r-addresses to HEX AccountID.
+- **[Decimal to Hex/FlipHex](https://hooks.services/tools/decimal-to-hex-to-fliphex)**: Convert percentages to HEX_FLIPPED.
 
-The hook performs the following steps:
+## Example Hook: ForwardSplit Hook
 
-1. Retrieves the hook account and the originating account of the transaction.
-2. Checks if the transaction is outgoing from the hook account and accepts it if true.
-3. Retrieves the transaction amount and ensures it is in XAH (8 bytes).
-4. Reserves space for three emitted transactions.
-5. Converts the transaction amount to XFL (floating-point format).
-6. Calculates the percentages for each account in XFL format.
-7. Calculates the forwarded amounts for each account using floating-point multiplication.
-8. Ensures the remaining amount in the hook account is at least 1% of the total transaction amount.
-9. Converts the forwarded amounts back to integer drops and logs them in XAH format.
-10. Prepares and emits the payment transactions for each account.
-11. Accepts the transaction with a success message if all emissions were successful.
+- **File**: `ForwardSplit.c`
+- **Purpose**: Splits incoming XAH Payments to three predefined accounts based on percentage parameters, reserving 1% in the Hook account for transaction fees. Designed for e-commerce revenue distribution.
 
-## Error Handling
+- **Logic**: Installed on `ttPayment`, the Hook verifies incoming XAH Payments, calculates splits using floating-point percentages, ensures a 1% reserve, and emits Payments to three accounts (Main, Second, Third). Outgoing Payments are accepted without splitting.
+- **Hook Parameters**:
+  - `M`: Main account (HEX AccountID).
+  - `S`: Second account (HEX AccountID).
+  - `T`: Third account (HEX AccountID).
+  - `MA`: Main percentage (HEX_FLIPPED, e.g., 50%).
+  - `SA`: Second percentage (HEX_FLIPPED, e.g., 30%).
+  - `TA`: Third percentage (HEX_FLIPPED, e.g., 20%).
+  - **Note**: Total percentages must not exceed 99% to reserve 1%.
 
-The hook includes error handling for the following scenarios:
+- **Installation**:
+  - Open `ForwardSplit.c` in [Xahau Hooks Builder](https://hooks-builder.xrpl.org/develop).
+  - Compile with the starter template.
+  - Deploy via Hooks Builder or [XRPLWin Hook Management](https://xahau-testnet.xrplwin.com/account/YOUR_WALLET_RADDRESS_HERE/manage/hooks).
+  - Set `HookOn` for `ttPayment` (`0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7ffff`).
+  - Example `SetHook` transaction:
+    ```javascript
+    const prepared = {
+      "TransactionType": "SetHook",
+      "Account": "your_account_address",
+      "Flags": 0,
+      "Hooks": [{
+        "Hook": {
+          "HookHash": "YOUR_HOOK_HASH",
+          "HookNamespace": "YOUR_NAMESPACE",
+          "HookOn": "0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7ffff"
+        }
+      }],
+      ...networkInfo.txValues
+    };
+    ```
+  - **Note**: Obtain `HookHash` and `HookNamespace` from Hooks Builder after compilation. See the [ForwardSplit source code](ForwardSplit.c) for details.
+- **Test Cases**:
 
-- If any of the required accounts (Main, Second, Third) are not set.
-- If any of the required amounts (Main Amount, Secondary Amount, Third Amount) are not set.
-- If the total percentage of the amounts exceeds 99%, ensuring the hook is always funded.
-- If any of the accounts are matching, to avoid forwarding to the same account.
-- If the remaining amount in the hook account is less than 1% of the total transaction amount.
-- If any errors occur during floating-point calculations or transaction emissions.
+  - Incoming XAH Payment (100 XAH): Splits to Main (50 XAH), Second (30 XAH), Third (20 XAH), retaining 1 XAH.
+  - Outgoing XAH Payment: Accepted.
+  - Non-XAH Payment: Rejected (`sfAmount` not 8 bytes).
+  - Invalid Percentages (>99%): Rejected.
+  - Missing Parameters: Rejected (e.g., unset `M`, `MA`).
 
-## Example Usage
+- **E-Commerce Use**: Deployed for e-commerce platforms to split Payments among stakeholders (e.g., vendors, affiliates, platform fees).
+- **Note**: Test on Testnet before Mainnet to ensure parameter accuracy.
 
-To use this hook, set the parameters as follows:
+## Testing
 
-- **Main Account**:   "M" (HEX_AccountID)
-- **Second Account**: "S" (HEX_AccountID)
-- **Third Account**:  "T" (HEX_AccountID)
-- **Main Amount**:      "MA" (HEX_FLIPPED)
-- **Secondary Amount**: "SA" (HEX_FLIPPED)
-- **Third Amount**:     "TA" (HEX_FLIPPED)
+1. **Setup Accounts**:
+   - Fund a Testnet account (e.g., `rTest123...`) using the Testnet Faucet.
+2. **Deploy Hooks**:
+   - Compile in Xahau Hooks Builder and deploy via Hooks Builder or XRPLWin Hook Management.
+3. **Test Transactions**:
+   - Send Payments using XRPLWin Tools.
+4. **Verify**:
+   - Check results in Xahau Explorer or Hooks Builder logs (`TRACESTR`/`TRACEHEX`).
 
-Ensure the total percentage of the amounts does not exceed 99%.
+## Debugging Tips
+- **Logs**: Use `TRACESTR` and `TRACEHEX` to track execution.
+- **Xahau Explorer**: Verify `TransactionType`, `Amount`, `HookHash`.
+- **Common Issues**:
+  - `Execution failure`: Use `uint8_t amount[48]` for `sfAmount` and check `otxn_field` returns.
+  - Parameter errors: Use XRPL Hex Visualizer or Decimal to Hex/FlipHex for correct values.
+- **State Tracking**: Monitor with [XRPLWin Hook Testnet](https://xahau-testnet.xrplwin.com/tools).
 
-## Additional Information
 
-This is a modification of the following tutorials, produced by Satish from XRPL Labs:  
+## Contributing
+Integrate these Hooks into your e-commerce platforms or contribute new ones! Submit issues or PRs to enhance **HandyHooks**. For educational Hooks, see [Xahau Hooks 101](Xahau-Hooks-101/README.md).
 
-- [https://www.youtube.com/watch?v=KdOHr6L0Ss4&t=380s](https://www.youtube.com/watch?v=KdOHr6L0Ss4&t=380s)  
-- [https://www.youtube.com/watch?v=wM19E3whV0c](https://www.youtube.com/watch?v=wM19E3whV0c)  
-
-GitHub Repository: [https://github.com/technotip/HookTutorials](https://github.com/technotip/HookTutorials)
-
-For more details, refer to the source code and comments within the hook implementation.
-
-This README provides an overview of the ForwardSplit hook, its workflow, error handling, and example usage. For further assistance, refer to the provided tools and documentation links.
+## Acknowledgments
+- **ForwardSplit Hook**: Original source by Satish from XRPL Labs ([YouTube](https://www.youtube.com/watch?v=KdOHr6L0Ss4&t=380s), [GitHub](https://github.com/technotip/HookTutorials)).
+- Thanks to the Xahau community for inspiration and support.
