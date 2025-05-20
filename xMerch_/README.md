@@ -74,7 +74,7 @@ Use these online tools to develop, test, and deploy Hooks—no local setup requi
       ...networkInfo.txValues
     };
     ```
-  - See the [uriRemit README](xMerch_/README.md) for details.
+  - See the original [uriRemit README](https://github.com/Cbot-XRPL/URI-Token-Remit/blob/main/README.md) for details.
 
 - **Test Cases**:
   - Incoming XAH Payment (matching `COST`): Mints URI Token, deletes state.
