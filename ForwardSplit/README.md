@@ -49,7 +49,7 @@ Use these online tools to develop, test, and deploy Hooks—no local setup requi
   - Open `ForwardSplit.c` in [Xahau Hooks Builder](https://hooks-builder.xrpl.org/develop).
   - Compile with the starter template.
   - Deploy via Hooks Builder or [XRPLWin Hook Management](https://xahau-testnet.xrplwin.com/account/YOUR_WALLET_RADDRESS_HERE/manage/hooks).
-  - Set `HookOn` for `ttPayment` (`0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7ffff`).
+  - Set `HookOn` for `ttPayment` (`0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffbffffe`).
   - Example `SetHook` transaction:
     ```javascript
     const prepared = {
@@ -60,7 +60,7 @@ Use these online tools to develop, test, and deploy Hooks—no local setup requi
         "Hook": {
           "HookHash": "YOUR_HOOK_HASH",
           "HookNamespace": "YOUR_NAMESPACE",
-          "HookOn": "0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7ffff"
+          "HookOn": "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffbffffe"
         }
       }],
       ...networkInfo.txValues
