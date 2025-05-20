@@ -1,33 +1,65 @@
 # HandyHooks
 
-Welcome to HandyHooks, a collection of pre-built Xahau hooks. This repository stores hooks that are available for anyone to use, edit, and distribute. Each hook contains its own README with installation instructions and detailed information.
+Welcome to **HandyHooks**, a collection of pre-built Xahau Hooks for the Xahau Network. This repository hosts Hooks designed for production use on Mainnet, alongside the educational **Xahau Hooks 101** series. All Hooks are written in C, compiled to WebAssembly (WASM) using the [Xahau Hooks Builder](https://hooks-builder.xrpl.org/develop) starter template, and available for anyone to use, edit, and distribute. Each Hook includes its own `README` with installation instructions and detailed information.
 
 ## What is Xahau?
 
-Xahau is a decentralized platform designed to facilitate secure and efficient transactions. It leverages blockchain technology to provide a transparent and immutable ledger, ensuring the integrity and security of all transactions.
+Xahau is a decentralized blockchain platform that enables secure, efficient, and transparent transactions. Its immutable ledger ensures data integrity, making it ideal for financial and automated applications.
 
 ## What are Hooks?
 
-Hooks are small, efficient pieces of code that can be attached to accounts on the Xahau network. They allow users to automate actions based on specific conditions or events, such as forwarding payments, enforcing rules, or triggering notifications. Hooks are written in C and are executed within the Xahau network, providing a powerful way to extend the functionality of the platform.
+Hooks are compact, efficient C programs attached to Xahau accounts, allowing users to automate actions based on specific conditions or events. Examples include forwarding payments, enforcing transaction rules, or managing state. Hooks are executed on the Xahau Network, extending its functionality for both Testnet and Mainnet applications.
 
 ## About Hook Builder
 
-Hook Builder is a tool that simplifies the process of creating and deploying hooks on the Xahau network. It provides a user-friendly interface for writing, testing, and deploying hooks, making it accessible for developers of all skill levels. With Hook Builder, you can:
+[Xahau Hooks Builder](https://hooks-builder.xrpl.org/develop) is a user-friendly, web-based tool for creating, testing, and deploying Hooks. It simplifies development with:
+- A code editor for writing C Hooks.
+- A simulated Testnet environment for testing.
+- One-click deployment to Testnet or Mainnet accounts.
 
-- Write custom hooks using a simple code editor.
-- Test hooks in a simulated environment to ensure they work as expected.
-- Deploy hooks to the Xahau network with just a few clicks.
+All Hooks in this repository are compiled using the Hooks Builder starter template, ensuring Mainnet compatibility.
+
+## Tools
+Use these online tools to work with HandyHooks—no local setup required:
+- **[Xahau Hooks Builder](https://hooks-builder.xrpl.org/develop)**: Write, compile, and deploy Hooks using the starter template.
+- **[XRPLWin Xahau Testnet Tools](https://xahau-testnet.xrplwin.com/tools)**: Create and test transactions on the Testnet.
+- **[XRPLWin Hook Management](https://xahau-testnet.xrplwin.com/account/YOUR_WALLET_RADDRESS_HERE/manage/hooks)**: Deploy and manage Hooks (replace `YOUR_WALLET_RADDRESS_HERE` with your account, e.g., `rTest123...`).
+- **[Xahau Testnet Faucet](https://xahau-test.net/faucet)**: Fund Testnet accounts.
+- **[Xahau Explorer](https://test.xahauexplorer.com/en)**: Verify transactions and Hook details.
+
 
 ## Repository Structure
+The repository is organized into directories based on Hook purpose:
+- **Xahau-Hooks-101**: Contains the **Xahau Hooks 101** series, a collection of educational Hooks for learning Xahau Hook development. See the [Xahau-Hooks-101 README](Xahau-Hooks-101/README.md) for details on these beginner-friendly examples.
+- **Production Hooks**: Includes Hooks designed for real-world use, such as `ForwardSplit`. Each Hook has its own directory and `README` with specific instructions.
 
-This repository contains a variety of pre-built hooks, each with its own README file that includes installation instructions and detailed information. The hooks are organized into directories based on their functionality.
+### Example Hook: ForwardSplit
+- **Purpose**: Forwards incoming XAH payments to three predefined accounts, distributing a percentage of the payment based on specified parameters.
+- **Hook Parameters**:
+  - `DEST1`, `DEST2`, `DEST3`: Destination account addresses.
+  - `PCT1`, `PCT2`, `PCT3`: Percentage splits (e.g., 50%, 30%, 20%).
+- **Installation**:
+  - Open `ForwardSplit.c` in Xahau Hooks Builder.
+  - Compile with the starter template.
+  - Deploy via Hooks Builder or XRPLWin Hook Management.
+- **Details**: See the [ForwardSplit README](ForwardSplit/README.md) for full instructions and test cases.
 
-## Example Hook: ForwardSplit
+## Testing
+1. **Setup Accounts**:
+   - Fund a Testnet account (e.g., `rTest123...`) using the Testnet Faucet.
+2. **Deploy Hooks**:
+   - Compile in Xahau Hooks Builder and deploy via Hooks Builder or XRPLWin Hook Management.
+3. **Test Transactions**:
+   - Send Payments (e.g., XAH or IOU) using XRPLWin Tools.
+4. **Verify**:
+   - Check results in Xahau Explorer or Hooks Builder logs (`TRACESTR`/`TRACEHEX`).
 
-The ForwardSplit hook is designed to forward incoming payments to three predefined accounts. It ensures that a percentage of all XAH payments is distributed according to the specified parameters. For more details, refer to the [ForwardSplit README](ForwardSplit/README.md).
+## Debugging Tips
+- **Logs**: Use `TRACESTR` and `TRACEHEX` to track execution.
+- **Xahau Explorer**: Verify `TransactionType`, `Amount`, and `HookHash`.
+- **Common Issues**:
+  - `Execution failure (no exit type specified)`: Caused by invalid `sfAmount` access. Use `uint8_t amount[48]` and check `otxn_field` returns.
+  - Non-Payment transactions: Ensure Hooks are set for `ttPayment`.
 
-## License
-
-This project is licensed under the Creative Commons Legal Code CC0 1.0 Universal. For more details, refer to the [LICENSE](LICENSE) file.
-
-Feel free to explore the hooks and integrate them into your projects!
+## Contributing
+Explore the Hooks, integrate them into your projects, or contribute new ones! Submit issues or PRs to enhance **HandyHooks**. For educational Hooks, check out the [Xahau Hooks 101](Xahau-Hooks-101/README.md) subfolder.
