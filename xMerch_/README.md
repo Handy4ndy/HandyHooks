@@ -107,9 +107,6 @@ Use these online tools to develop, test, and deploy Hooks—no local setup requi
   - URI length errors: Use XRPL Hex Visualizer for consistent `URIL`.
 - **State Tracking**: Monitor state with XRPLWin Hook Testnet.
 
-## License
-This project is licensed under the [Creative Commons Legal Code CC0 1.0 Universal](LICENSE). Use, edit, and distribute freely.
-
 ## Contributing
 Integrate these Hooks into your e-commerce platforms or contribute new ones! Submit issues or PRs to enhance **HandyHooks**. For educational Hooks, see [Xahau Hooks 101](Xahau-Hooks-101/README.md).
 
