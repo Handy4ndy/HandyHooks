@@ -34,7 +34,8 @@ Use these online tools to compile, deploy, test, and manage Hooks—no with loca
 - **[XRPLWin Xahau Testnet Tools](https://xahau-testnet.xrplwin.com/tools)**: Suite of tools for interacting with the Xahau Testnet, including transaction creation and Hook testing.
 - **[XRPLWin Hook Management](https://xahau-testnet.xrplwin.com/account/YOU_WALLET_RADDRESS_HERE/manage/hooks)**: Manage Hooks on your Testnet account (replace `YOU_WALLET_RADDRESS_HERE` with your account, e.g., `rTest123...`).
 - **[Xahau Testnet Faucet](https://xahau-test.net/faucet)**: Fund Testnet accounts for testing.
-- **[Xahau Explorer](https://test.xahauexplorer.com/)**: Verify transactions, Hook installation, and `HookHash`.
+- **[Xahau Explorer](https://test.xahauexplorer.com/en)**: Check transactions and Hook details.
+- **[Xahau Mainnet Explorer](https://xahau.xrplwin.com/)**: Check transactions and Hook details.
 
 ## Hooks
 

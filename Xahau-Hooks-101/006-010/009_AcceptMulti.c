@@ -2,14 +2,19 @@
  * HandyHooks - 009 - Accept Multiple:
  * This hook allows outgoing transactions and blocks payments that are not a multiple of the cost_xah.
  * Install on ttPayment.
- * Set the cost_xah to the desired amount.(50)
+ * Set the cost_xah to the desired amount.(17)
  */
 
 #include "hookapi.h"
 
 #define DONE(x) accept(SBUF(x), __LINE__)
 #define NOPE(x) rollback(SBUF(x), __LINE__)
+
+// Create the global variable for multi_count
 uint64_t multi_count = 0;
+
+// Configure the cost in XAH for each URI
+uint64_t cost_xah = 10;
 
 int64_t hook(uint32_t reserved)
 {
@@ -33,7 +38,7 @@ int64_t hook(uint32_t reserved)
         DONE("Accept Multiple: Outgoing payment transaction accepted");
     }
 
-    // fetch the sent Amount
+    // Convert the amount from drops to XAH
     unsigned char amount_buffer[48];
     int64_t amount_len = otxn_field(SBUF(amount_buffer), sfAmount);
     int64_t otxn_drops = AMOUNT_TO_DROPS(amount_buffer);
@@ -46,14 +51,13 @@ int64_t hook(uint32_t reserved)
         NOPE("Accept Multiple: Error: Non-XAH payment rejected.");
     }
 
-    // Reconstruct COST value (in XAH, convert to drops)
-    uint64_t cost_xah = 10;
+    // Reconstruct COST value 
     uint64_t cost_drops = cost_xah * 1000000; // Convert XAH to drops
-    
     TRACEVAR(cost_drops);
 
-    // Calculate number of URIs to mint
+    // Calculate if the payment is a multiple of the cost
     multi_count = otxn_drops / cost_drops;
+
     if (multi_count == 0) {
         NOPE("Accept Multiple: Error: Payment amount is less than COST!");
     }

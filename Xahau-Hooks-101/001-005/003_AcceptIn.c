@@ -34,7 +34,6 @@ int64_t hook(uint32_t reserved ) {
         }
 
 
-    _g(1,1);   // every hook needs to import guard function and use it at least once
-    // unreachable
+    _g(1,1);
     return 0;
 }

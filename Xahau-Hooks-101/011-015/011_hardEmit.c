@@ -1,9 +1,10 @@
 /**
- * HandyHooks - 010 - Accept Emit.
- * This hook allows outgoing transactions, limits the incoming payment and returns 5 XAH to the sender.
+ * HandyHooks - 011 - Hard Emit.
+ * This hook limits the incoming payment's and sends 5 XAH to the ftxn_acc.
  * Install on ttPayment.
- * Set the exact_amount_value to the desired amount.(15)
- * Set the amountOut to the desired amount.(18)
+ * Set the exact_amount_value to the desired amount.(16)
+ * Set the amountOut to the desired amount.(19)
+ * Set the ftxn_acc to the desired account address. (22)
  */
 
 #include "hookapi.h"
@@ -11,16 +12,19 @@
 #define DONE(x) accept(SBUF(x), __LINE__)
 #define NOPE(x) rollback(SBUF(x), __LINE__)
 
-// Configure an Exact amount
+// Configure an exact amount to recieve
 uint64_t exact_amount_value = 10; // 10 XAH
 
 // Configure the amount to emit (In drops)
 uint64_t amountOut = 5000000; // 5 XAH
 
+// Configure Account to emit the payment to
+uint8_t ftxn_acc[20] = { 0x08U, 0x47U, 0x8BU, 0x33U, 0x41U, 0xBBU, 0x50U, 0xFCU, 0x05U, 0x73U, 0x68U, 0xF2U, 0x2AU, 0xF7U, 0x8CU, 0x59U, 0xF8U, 0x5EU, 0x41U, 0xC5U };
+
 int64_t hook(uint32_t reserved)
 {
 
-    TRACESTR("Accept Emit:: Called.");
+    TRACESTR("Hard Emit:: Called.");
 
     // ACCOUNT: Hook Account
     uint8_t hook_acc[20];
@@ -36,7 +40,7 @@ int64_t hook(uint32_t reserved)
     // If the transaction is outgoing from the hook account, accept it
     if (BUFFER_EQUAL_20(hook_acc, otxn_acc) && tt == ttPAYMENT)
     {
-        DONE("Accept Emit:: Outgoing payment transaction accepted");
+        DONE("Hard Emit: Outgoing payment transaction accepted");
     }
 
     // Convert the amount from drops to XAH
@@ -48,12 +52,12 @@ int64_t hook(uint32_t reserved)
 
     // Ensure the payment is XAH
     if (amount_len != 8){
-        NOPE("Accept Emit: Error: Non-XAH payment rejected.");
+        NOPE("Hard Emit: Error: Non-XAH payment rejected.");
     }
 
     // Check if the payment is equal to the exact amount
     if (xah_amount != exact_amount_value){
-        NOPE("Accept Emit: Error: Payment amount doesn't match the exact_amount_value.");
+        NOPE("Hard Emit: Error: Payment amount doesn't match the exact_amount_value.");
     }
 
     // Reserve space for emitted transaction
@@ -61,16 +65,16 @@ int64_t hook(uint32_t reserved)
 
      uint8_t txn[PREPARE_PAYMENT_SIMPLE_SIZE];
      // Prepare the payment transactions
-     PREPARE_PAYMENT_SIMPLE(txn, amountOut, otxn_acc, 0, 0);
+     PREPARE_PAYMENT_SIMPLE(txn, amountOut, ftxn_acc, 0, 0);
 
      uint8_t emithash[32];
 
      // Emit the transactions and check if they were successful
      if (emit(SBUF(emithash), SBUF(txn)) != 32) {
-         NOPE("Accept Emit: Error: Failed to emit transactions");
+         NOPE("Hard Emit: Error: Failed to emit transactions");
      }
  
-     DONE("Accept Emit: Payment recieved and forwarded Successfully");
+     DONE("Hard Emit: Payment recieved and forwarded Successfully");
 
     _g(1, 1);
     return 0;

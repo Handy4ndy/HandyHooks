@@ -26,14 +26,13 @@ int64_t hook(uint32_t reserved ) {
  
      // If the transaction is outgoing from the hook account, accept it
      if (BUFFER_EQUAL_20(hook_acc, otxn_acc)){
-         DONE("Accept All: Outgoing payment transaction accepted");
+         DONE("Accept All: Outgoing payment transaction accepted.");
 
         } else{
-            DONE("Accept All: Incoming payment transaction accepted");
+            DONE("Accept All: Incoming payment transaction accepted.");
         }
 
 
-    _g(1,1);   // every hook needs to import guard function and use it at least once
-    // unreachable
+    _g(1,1);
     return 0;
 }

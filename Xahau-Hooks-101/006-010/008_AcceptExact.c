@@ -2,13 +2,16 @@
  * HandyHooks - 008 - Accept Exact.
  * This hook allows outgoing transactions and blocks payments that dont match the exact_amount_value.
  * Install on ttPayment.
- * Set the exact_amount_value to the desired amount.(49)
+ * Set the exact_amount_value to the desired amount.(14)
  */
 
 #include "hookapi.h"
 
 #define DONE(x) accept(SBUF(x), __LINE__)
 #define NOPE(x) rollback(SBUF(x), __LINE__)
+
+// Configure an exact amount
+uint64_t exact_amount_value = 10; // 10 XAH
 
 int64_t hook(uint32_t reserved)
 {
@@ -32,7 +35,7 @@ int64_t hook(uint32_t reserved)
         DONE("Accept Exact: Outgoing payment transaction accepted");
     }
 
-    // fetch the sent Amount
+    // Convert the amount from drops to XAH
     unsigned char amount_buffer[48];
     int64_t amount_len = otxn_field(SBUF(amount_buffer), sfAmount);
     int64_t otxn_drops = AMOUNT_TO_DROPS(amount_buffer);
@@ -44,10 +47,7 @@ int64_t hook(uint32_t reserved)
         NOPE("Accept Exact: Error: Non-XAH payment rejected.");
     }
 
-    // Configure a minimum amount
-    uint64_t exact_amount_value = 10; // 10 XAH
-
-    // Check if the payment is less than the minimum amount
+    // Check if the payment matches the exact amount
     if (xah_amount != exact_amount_value){
         NOPE("Accept Exact: Error: Payment amount doesn't match the exact_amount_value.");
     }
