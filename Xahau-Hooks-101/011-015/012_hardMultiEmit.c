@@ -66,11 +66,11 @@ int64_t hook(uint32_t reserved)
 
      // Prepare the first payment transactions
      uint8_t txn1[PREPARE_PAYMENT_SIMPLE_SIZE];
-     PREPARE_PAYMENT_SIMPLE(txn, amountOut, ftxn_acc1, 0, 0);
+     PREPARE_PAYMENT_SIMPLE(txn1, amountOut, ftxn_acc1, 0, 0);
 
      // Prepare the second payment transaction
      uint8_t txn2[PREPARE_PAYMENT_SIMPLE_SIZE];
-     PREPARE_PAYMENT_SIMPLE(txn, amountOut, ftxn_acc2, 0, 0);
+     PREPARE_PAYMENT_SIMPLE(txn2, amountOut, ftxn_acc2, 0, 0);
 
      uint8_t emithash1[32];
      uint8_t emithash2[32];
