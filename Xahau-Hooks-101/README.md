@@ -21,10 +21,11 @@ No local setup needed! Use these online tools to write, compile, test, and deplo
 - **[XRPLWin Hook Management](https://xahau-testnet.xrplwin.com/account/YOU_WALLET_RADDRESS_HERE/manage/hooks)**: Deploy and manage Hooks (replace `YOU_WALLET_RADDRESS_HERE` with your account, e.g., `rTest123...`).
 - **[Xahau Testnet Faucet](https://xahau-test.net/faucet)**: Fund Testnet accounts.
 - **[Xahau Explorer](https://test.xahauexplorer.com/en)**: Check transactions and Hook details.
+- **[Xahau Mainnet Explorer](https://xahau.xrplwin.com/)**: Check transactions and Hook details.
 
 
 ## Current Status
-The project is in its early stages, with a small set of Hooks already developed in the `001-005` folder (see the separate `README.md` there for details). These initial Hooks focus on basic transaction processing, serving as a foundation for learning C and Xahau Hooks.
+The project is in its early stages, with a small set of Hooks already developed in the `001-005` `006-010` `011-015` folder (see the separate `README.md` there for details). These initial Hooks focus on basic transaction processing, serving as a foundation for learning C and Xahau Hooks.
 
 ## Future Plans
 As the project grows, new Hooks will explore:
