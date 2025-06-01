@@ -1,8 +1,8 @@
 /**
  * HandyHooks - 016 - Invoke Multi Emit.
- * This hook limits the incoming payment and forwards an amount to two acounts.
- * Install on ttPayment with the following hook params: AM, AO, A1, A2.
- * Convert decimal to 32bit hex (flipped https://hooks.services/tools/decimal-to-hex-to-fliphex).
+ * This hook limits the incoming payment and forwards an amount to multiple acounts.
+ * Install on ttPayment with the following hook params: AM, AO, A1, NUM.
+ * Convert decimal to 64bit hex (flipped https://hooks.services/tools/decimal-to-hex-to-fliphex).
  * Example: "AM": "000000000000000A", "AO": "0000000000000005",
  * Convert rADDRESS to Account ID (https://hooks.services/tools/raddress-to-accountid).
  * Example: "A1": "05A506F1996C9E045C1CE7EE7DF7E599C19A6D52", "NUM": "0000000000000001".
