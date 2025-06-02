@@ -11,7 +11,7 @@
 
 int64_t hook(uint32_t reserved ) {
 
-    TRACESTR("Accept Out: Called.");
+    TRACESTR("Accept Out: Called.");s
 
     // Get the hook account
      uint8_t hook_acc[20];
@@ -27,10 +27,10 @@ int64_t hook(uint32_t reserved ) {
  
      // If the transaction is outgoing from the hook account, accept it
      if (BUFFER_EQUAL_20(hook_acc, otxn_acc)){
-         DONE("Accept OUT: Outgoing payment transaction accepted.");
+         DONE("Accept Out: Outgoing payment transaction accepted.");
 
         } else{
-            NOPE("Accept OUT: Incoming payment transaction rejected.");
+            NOPE("Accept Out: Incoming payment transaction rejected.");
         }
 
 

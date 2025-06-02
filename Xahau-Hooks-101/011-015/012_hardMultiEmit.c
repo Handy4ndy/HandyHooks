@@ -1,6 +1,6 @@
 /**
  * HandyHooks - 012 - Hard Multi Emit.
- * This hook limits the incoming payment's and forwards 5 XAH to two hardcoded accounts.
+ * This hook limits the incoming payments and forwards 5 XAH to two hardcoded accounts.
  * Install on ttPayment.
  * Set the exact_amount_value to the desired amount.(16)
  * Set the amountOut to the desired amount.(19)

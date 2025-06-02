@@ -1,5 +1,5 @@
 /**
- * HandyHooks - 017 - Invoke URI Emit.  ***WORK IN PROGRESS***
+ * HandyHooks - 017 - Invoke URI Emit.  ***WORK IN PROGRESS MISSING DIGEST***
  * This hook mint's a URI token for any payment recieved.
  * Install on ttPayment & ttInvoke.
  * 

@@ -1,6 +1,6 @@
 /**
  * HandyHooks - 011 - Hard Emit.
- * This hook limits the incoming payment's and sends 5 XAH to the ftxn_acc.
+ * This hook limits the incoming payments and sends 5 XAH to the ftxn_acc.
  * Install on ttPayment.
  * Set the exact_amount_value to the desired amount.(16)
  * Set the amountOut to the desired amount.(19)
