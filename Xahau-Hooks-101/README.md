@@ -25,7 +25,7 @@ No local setup needed! Use these online tools to write, compile, test, and deplo
 
 
 ## Current Status
-The project is in its early stages, with a small set of Hooks already developed in the `001-005` `006-010` `011-015` folder (see the separate `README.md` there for details). These initial Hooks focus on basic transaction processing, serving as a foundation for learning C and Xahau Hooks.
+The project is in its early stages, with a small set of Hooks already developed in the `001-005` `006-010` `011-015` folders (see the separate `README.md` there for details). These initial Hooks focus on basic transaction processing, serving as a foundation for learning C and Xahau Hooks.
 
 ## Future Plans
 As the project grows, new Hooks will explore:
