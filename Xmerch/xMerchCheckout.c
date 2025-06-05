@@ -2,7 +2,7 @@
   HandyHooks Split Payment Hook
   ----------------------------
   This Hook splits an incoming Payment into multiple outgoing payments
-  based on HookParameters AMn (amount in XAH) and ACn (destination account).
+  based on HookParameters VPOn (amount in XAH) and VPAn (destination account).
   https://hooks-builder.xrpl.org/develop
   Example HookParameters (JSON): --- COPY THIS INTO HOOKS BUILDER AS JSON then EDIT
 
@@ -56,12 +56,12 @@
 
 
   HookParameter Details:
-    - AMn: Amount in XAH (uint64, 8 bytes, big-endian hex, e.g. "0000000000000064" = 100 XAH) https://transia-rnd.github.io/xrpl-hex-visualizer/
-    - ACn: Destination account (20 bytes, hex-encoded classic address) https://hooks.services/tools/raddress-to-accountid
+    - VPOn: Amount in XAH (uint64, 8 bytes, big-endian hex, e.g. "0000000000000064" = 100 XAH) https://transia-rnd.github.io/xrpl-hex-visualizer/
+    - VPAn: Destination account (20 bytes, hex-encoded classic address) https://hooks.services/tools/raddress-to-accountid
     - n: Index (1-5), up to 5 pairs supported
 
-  The sum of all AMn must not exceed the incoming payment amount.
-  Each ACn must be unique and not the Hook's own account.
+  The sum of all VPOn must not exceed the incoming payment amount.
+  Each VPAn must be unique and not the Hook's own account.
 
   Author: HandyHooks
   License: MIT
@@ -159,10 +159,10 @@ int64_t hook(uint32_t reserved)
     int64_t account_count = 0;
     int64_t total_am_drops = 0;
 
-    // Loop through possible parameter pairs (AM1/AC1, AM2/AC2, etc.)
+    // Loop through possible parameter pairs (VPO1/VPA1, VPO2/VPA2, etc.)
     for (int64_t i = 0; GUARD(5), i < MAX_ACCOUNTS; i++)
     {
-        // Extract AM parameter (uint64 amount in XAH)
+        // Extract VPO parameter (uint64 amount in XAH)
         uint8_t param_am[PARAM_VALUE_MAX];
         int64_t param_am_len = otxn_param(SBUF(param_am), param_name_am_n[i], sizeof(param_name_am_n[i]));
         if (param_am_len == DOESNT_EXIST)
@@ -171,11 +171,11 @@ int64_t hook(uint32_t reserved)
         }
         else if (param_am_len != 8)
         {
-            NOPE("CheckoutPaymentHook: Error: AM parameter must be 8 bytes (uint64).");
+            NOPE("CheckoutPaymentHook: Error: VPO parameter must be 8 bytes (uint64).");
         }
         else if (param_am_len < 0)
         {
-            NOPE("CheckoutPaymentHook: Error: Failed to read AM parameter.");
+            NOPE("CheckoutPaymentHook: Error: Failed to read VPO parameter.");
         }
 
         // Convert AM parameter to drops (AM is in XAH)
@@ -183,7 +183,7 @@ int64_t hook(uint32_t reserved)
         TRACEVAR(am_value); // Log raw AM value for debugging
         if (am_value <= 0)
         {
-            NOPE("CheckoutPaymentHook: Error: Invalid AM parameter amount.");
+            NOPE("CheckoutPaymentHook: Error: Invalid VPO parameter amount.");
         }
 
         // Convert XAH to Drops
@@ -191,20 +191,20 @@ int64_t hook(uint32_t reserved)
         total_am_drops += am_drops[account_count];
         TRACEVAR(am_drops[account_count]);
 
-        // Validate total AM amounts match incoming payment
+        // Validate total VPO amounts match incoming payment
         TRACEVAR(total_am_drops);
 
         if (total_am_drops > otxn_drops)
         {
-            NOPE("CheckoutPaymentHook: Error: Sum of AM amounts exceeds incoming payment amount.");
+            NOPE("CheckoutPaymentHook: Error: Sum of VPO amounts exceeds incoming payment amount.");
         }
 
-        // Extract AC parameter (20-byte account ID or 40-byte hex string)
+        // Extract VPA parameter (20-byte account ID or 40-byte hex string)
         uint8_t param_ac_raw[PARAM_VALUE_MAX];
         int64_t param_ac_len = otxn_param(SBUF(param_ac_raw), param_name_ac_n[i], sizeof(param_name_ac_n[i]));
         if (param_ac_len == DOESNT_EXIST)
         {
-            NOPE("CheckoutPaymentHook: Error: AC parameter not found for corresponding AM.");
+            NOPE("CheckoutPaymentHook: Error: VPA parameter not found for corresponding AM.");
         }
         else if (param_ac_len == 20)
         {
@@ -213,10 +213,10 @@ int64_t hook(uint32_t reserved)
                 accounts[account_count][j] = param_ac_raw[j];
         }
 
-        // Validate AC is not hook account
+        // Validate VPA is not hook account
         if (BUFFER_EQUAL_20(hook_acc, accounts[account_count]))
         {
-            NOPE("CheckoutPaymentHook: Error: AC parameter cannot be hook account.");
+            NOPE("CheckoutPaymentHook: Error: VPA parameter cannot be hook account.");
         }
 
         // Check for duplicate accounts
@@ -235,7 +235,7 @@ int64_t hook(uint32_t reserved)
     // Ensure at least one pair was found
     if (account_count == 0)
     {
-        NOPE("CheckoutPaymentHook: Error: No valid AM/AC parameter pairs found.");
+        NOPE("CheckoutPaymentHook: Error: No valid VPO/VPA parameter pairs found.");
     }
 
     // Reserve space for emitted transactions
