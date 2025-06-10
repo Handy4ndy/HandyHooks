@@ -199,7 +199,6 @@ if(tt == 99 && !equal){
 
 // HookOn: Invoke Set COUNT State ----------------------------------------------------------------------------------------
 
-
 if (tt == 99 && isCount > 0){ 
 
 
@@ -274,19 +273,38 @@ accept(SBUF("Success: Deleted the state."), __LINE__);
 
 }
 
-// HookOn: URI Token Mint  -----------------------------------------------------------------------------------------
+// // HookOn: Incoming Payment Gateway  -----------------------------------------------------------------------------------------
+
 
 if (tt == 00){ 
 
 //check the 
-if(count <= 0)
+if(count <= 0){
  rollback(SBUF("Error: This hook has no more URI tokens to mint. Contact the owner of this hook for more information!"), __LINE__);   
- 
+}
+
+// fetch the sent Amount
+unsigned char amount_buffer[48];
+int64_t amount_len = otxn_field(SBUF(amount_buffer), sfAmount);
+int64_t otxn_drops = AMOUNT_TO_DROPS(amount_buffer);
+double xah_amount = (double)otxn_drops / 1000000.0;  // Convert to XRP
+TRACEVAR(xah_amount);
+
+//Ensure the payment is XAH
+if (amount_len != 8)
+{
+rollback(SBUF("Error: This hook only accepts XAH!"), __LINE__);
+}
+
+// HookOn: URI Token Mint  -----------------------------------------------------------------------------------------
+
+if (tt == 00){ 
 
 // Convert number to a byte buffer
 uint8_t count_buf[8] = {0};
 UINT64_TO_BUF(count_buf, count);
 TRACEHEX(count_buf);
+
 
 
 // STATE URI BUFFER
@@ -320,12 +338,10 @@ PREPARE_REMIT_TXN(hook_acct, otx_acc, suri, reconstructed_uril_value);
 
         accept(SBUF("Success:Tx emitted success."), __LINE__);
     }
+    accept(SBUF("Error: Tx emitted failure."), __LINE__);
 
-
-    rollback(SBUF("Error: Tx emitted failure."), __LINE__);
-
+    }
 }
-
 
 //final gaurds
 
