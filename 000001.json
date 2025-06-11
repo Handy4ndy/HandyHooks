@@ -1,0 +1,13 @@
+{
+  "name": "HandyHooks - Thank you remit",
+  "description": "This is a thank you gift for your donation through the xpert.page platform, we appreciate your support",
+  "image": "ipfs://bafkreia5uv2wqaknbh4zdrtty6jm2qlrx7z6ttc3ga45r4szd57adamchm",
+  "external_link": "https://xpert.page/handy_4ndy",
+  "attributes": [
+    {
+      "trait_type": "Message",
+      "value": "Thank you for your support, we appreciate it!"
+    }
+  ],
+  "edition": "001"
+}
