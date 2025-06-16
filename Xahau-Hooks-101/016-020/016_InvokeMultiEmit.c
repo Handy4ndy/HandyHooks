@@ -220,6 +220,6 @@ int64_t hook(uint32_t reserved)
 
     NOPE("Invoke Multi Emit: Error: Transaction type not supported");
 
-    GUARD(1);
+    _g(1,1);
     return 0;
 }

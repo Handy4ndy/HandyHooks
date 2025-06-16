@@ -180,7 +180,7 @@ It's recommended that you verify the functionality of any Hook on Testnet before
 - **Bypass Mechanisms**: Hook 027’s `PASS` parameter shows how to implement conditional logic for overriding restrictions securely.
 - **Transaction Emission**: Hook 030 illustrates emitting transactions with `emit` and `PREPARE_PAYMENT_SIMPLE`, useful for reactive Hooks.
 - **Buffer Sizing**: Use precise buffer sizes (e.g., 8 bytes for `sfFee`, 48 bytes for `sfAmount`) to avoid field access errors.
-- **Guard Macro**: Use `_g(1,1)` or `GUARD(1)` to prevent reentrancy and ensure safe execution.
+- **Guard Macro**: Use `_g(1,1)` to prevent reentrancy and ensure safe execution.
 - **Testing**: Test with varied XAH amounts, fees, parameters, and invalid `ttINVOKE` inputs to catch edge cases.
 
 ## Contributing

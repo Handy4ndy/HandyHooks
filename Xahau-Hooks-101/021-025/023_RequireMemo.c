@@ -43,4 +43,6 @@ int64_t hook(uint32_t reserved) {
     DONE("Require Memo: Incoming payment without memos accepted.");
 
     _g(1,1); 
+
+    return 0;
 }

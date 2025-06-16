@@ -170,6 +170,6 @@ int64_t hook(uint32_t reserved) {
 
     NOPE("Spam Prevent Hook: Error: Unsupported transaction type.");
 
-    GUARD(1);
+    _g(1,1)
     return 0;
 }
