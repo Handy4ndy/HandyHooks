@@ -65,7 +65,7 @@ Fill in the template below:
 ## 🎊 5. Celebrate!
 
 Your message is now part of Xahau’s on-chain birthday card!  
-See your wish (and others) in the [Namespace Explorer](https://xahau.xrplwin.com/account/rGe24P5aZckhpfsXSsSwRa68pgtaio4yZw/namespaces/FBE697429F16141BC71E3B91F3823641C8DD258DD58BF076241514754954CB8C).
+See your wish (and others) in the [Namespace Explorer](https://xahau.xrplwin.com/account/rD1CX9FwgPfCLBmH8k8qvFWxauGMWmWbct/namespaces.
 
 ---
 
