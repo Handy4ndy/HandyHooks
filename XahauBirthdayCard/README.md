@@ -1,5 +1,9 @@
 # 🎉 BirthdayCardHook – Celebrate Xahau's 2nd Anniversary! 🎂
 
+<p align="center">
+  <img src="./XahauAnniversary.png" alt="Xahau 2nd Anniversary" />
+</p>
+
 **Part of the HandyHooks collection**
 
 Welcome to the **BirthdayCardHook** – a special Xahau hook for the community to celebrate Xahau’s second anniversary!  
@@ -11,19 +15,25 @@ This is open, fun, and a perfect example of community-powered, on-chain celebrat
 ## ✨ Features
 
 - **Open Message Board:** Anyone can add a birthday wish to Xahau’s card!
-- **Owner-Only Moderation:** Only the hook owner can delete messages.
-- **On-Chain Storage:** Messages are stored forever in the hook’s state.
+- **Owner-Only Moderation:** Only the hook owner can delete messages (by account ID).
+- **On-Chain Storage:** Messages are stored in the hook’s state, one per account.
 - **Easy to Use:** Just send an Invoke transaction with your message.
-- **Automatic Counting:** Tracks the total number of messages.
+
+---
+
+## 🎂 How to Send a Birthday Message 🎉
+
+👉 [Click here for step-by-step instructions!](./MESSAGE.md)
 
 ---
 
 ## 🚀 How It Works
 
 1. **Add a Message:**  
-   Anyone can send a message using the `MSG` parameter.
+   Anyone can send a message using the `MSG` parameter.  
+   Each account can have one message (overwrites previous).
 2. **Delete a Message:**  
-   Only the hook owner can delete a message using the `DEL` parameter.
+   Only the hook owner can delete a message using the `DEL` parameter (provide the account ID to delete).
 
 ---
 
@@ -32,7 +42,7 @@ This is open, fun, and a perfect example of community-powered, on-chain celebrat
 | Parameter | Size      | Format             | Description                                 |
 |-----------|-----------|--------------------|---------------------------------------------|
 | `MSG`     | Variable  | UTF-8 text (HEX)   | The birthday message to store (up to 1024 bytes) |
-| `DEL`     | 8 bytes   | Big-endian uint64  | The message number to delete (owner only)   |
+| `DEL`     | 20 bytes  | Account ID         | The account ID whose message should be deleted (owner only) |
 
 ---
 
@@ -40,8 +50,8 @@ This is open, fun, and a perfect example of community-powered, on-chain celebrat
 
 | State Key         | Size    | Description                                   |
 |-------------------|---------|-----------------------------------------------|
-| `CNT`             | 8 bytes | Counter tracking total number of messages     |
-| `{message_number}`| Variable| Individual message content, keyed by number   |
+| Namespace (per account) | 32 bytes | First 20 bytes: account ID, rest zero-padded |
+| `BIRTHDAY_MSG`    | Variable| The message content for that account          |
 
 ---
 
@@ -53,7 +63,7 @@ This is open, fun, and a perfect example of community-powered, on-chain celebrat
 {
   "TransactionType": "Invoke",
   "Account": "rAnyXahauUser...",
-  "Destination": "rBirthdayCardOwner...",
+  "Destination": "rD1CX9FwgPfCLBmH8k8qvFWxauGMWmWbct",
   "HookParameters": [
     {
       "HookParameter": {
@@ -71,12 +81,11 @@ This is open, fun, and a perfect example of community-powered, on-chain celebrat
 {
   "TransactionType": "Invoke",
   "Account": "rBirthdayCardOwner...",
-  "Destination": "rBirthdayCardOwner...",
   "HookParameters": [
     {
       "HookParameter": {
         "HookParameterName": "44454C",
-        "HookParameterValue": "0000000000000001"
+        "HookParameterValue": "AABBCCDDEEFF00112233445566778899AABBCCDD" // 20-byte account ID in hex
       }
     }
   ]
@@ -88,7 +97,7 @@ This is open, fun, and a perfect example of community-powered, on-chain celebrat
 ## 🛡️ Security & Access
 
 - **Anyone Can Add:** Open to all Xahau users!
-- **Owner-Only Delete:** Only the hook owner can remove messages.
+- **Owner-Only Delete:** Only the hook owner can remove messages by account ID.
 - **Invoke Only:** Only processes invoke transactions.
 - **Parameter Validation:** Ensures correct format and size.
 
