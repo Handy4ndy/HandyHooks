@@ -1,5 +1,7 @@
 # 🎉 BirthdayCardHook – Celebrate Xahau's 2nd Anniversary! 🎂
 
+![Xahau 2nd Anniversary](./XahauAnniversary.png)
+
 **Part of the HandyHooks collection**
 
 Welcome to the **BirthdayCardHook** – a special Xahau hook for the community to celebrate Xahau’s second anniversary!  
