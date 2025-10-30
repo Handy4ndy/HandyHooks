@@ -8,7 +8,7 @@
 
 <p align="center">
 Let’s make Xahau’s 2nd birthday unforgettable!  
-Add your wish to the on-chain birthday card in just a few fun steps.
+Add your message to the on-chain birthday card in just a few fun steps.
 </p>
 
 ---
@@ -69,7 +69,8 @@ Sign in with Xaman and submit using your wallet.
 ## 🎊 5. Celebrate!
 
 Your message is now part of Xahau’s on-chain birthday card!  
-See your wish (and others) in the [Namespace Explorer](https://xahau.xrplwin.com/account/rD1CX9FwgPfCLBmH8k8qvFWxauGMWmWbct/namespaces).
+See your message (and others) in the [Namespace Explorer](https://xahau.xrplwin.com/account/rD1CX9FwgPfCLBmH8k8qvFWxauGMWmWbct/namespaces).
+** Your message is stored in the namespace beginning with your AccountID **
 
 ---
 
