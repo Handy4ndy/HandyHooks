@@ -39,7 +39,7 @@ Fill in the template below:
 {
   "TransactionType": "Invoke",
   "Account": "YOUR_rADDRESS_HERE",
-  "Destination": "rGe24P5aZckhpfsXSsSwRa68pgtaio4yZw",
+  "Destination": "rD1CX9FwgPfCLBmH8k8qvFWxauGMWmWbct",
   "HookParameters": [
     {
       "HookParameter": {
