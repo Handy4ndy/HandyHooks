@@ -14,7 +14,7 @@ Add your wish to the on-chain birthday card in just a few fun steps.
 Type your birthday wish for Xahau!  
 _Example:_  
 ```
-Happy 2nd Birthday, Xahau! 🎉
+Happy 2nd Birthday, Xahau!
 ```
 
 ---
@@ -23,14 +23,15 @@ Happy 2nd Birthday, Xahau! 🎉
 
 Use the [XRPL HEX Visualizer](https://transia-rnd.github.io/xrpl-hex-visualizer/):
 
-- Paste your message into the **Text** field.
-- Copy the HEX string from the **Hex** field.
+- Paste your message into the **Text** field. (Happy 2nd Birthday, Xahau!)
+- Copy the HEX string from the **Hex** field. (486170707920326E642042697274686461792C20586168617521)
 
 ---
 
 ## 📝 3. Prepare Your Transaction
 
-Fill in the template below:
+1. Go to [XRPL Win Raw Transaction Sender](https://xahau.xrplwin.com/tools/tx/raw).
+2. Fill in the template below:
 
 - Replace `YOUR_rADDRESS_HERE` with your Xahau address.
 - Replace `MESSAGE_HEX_STRING_HERE` with your HEX string.
@@ -56,9 +57,7 @@ Fill in the template below:
 
 ## 🚀 4. Submit Your Message
 
-1. Go to [XRPL Win Raw Transaction Sender](https://xahau.xrplwin.com/tools/tx/raw).
-2. Paste your filled-out JSON into the transaction field.
-3. Sign in and submit using your wallet.
+Sign in with Xaman and submit using your wallet.
 
 ---
 
@@ -69,4 +68,4 @@ See your wish (and others) in the [Namespace Explorer](https://xahau.xrplwin.com
 
 ---
 
-**Happy Birthday, Xahau! Let’s fill the chain with joy! 🥳**
+**Happy Birthday, Xahau! 🥳**
