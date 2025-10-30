@@ -1,11 +1,15 @@
-# 🎂 How to Send a Birthday Message 🎉
+<h1 align="center">
+ 🎂 How to Send a Birthday Message 🎉
+</h1>
 
 <p align="center">
   <img src="./XahauAnniversary.png" alt="Xahau 2nd Anniversary" />
 </p>
 
+<p align="center">
 Let’s make Xahau’s 2nd birthday unforgettable!  
 Add your wish to the on-chain birthday card in just a few fun steps.
+</p>
 
 ---
 
