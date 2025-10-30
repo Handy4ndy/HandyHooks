@@ -29,6 +29,7 @@ Use the [XRPL HEX Visualizer](https://transia-rnd.github.io/xrpl-hex-visualizer/
 
 - Paste your message into the **Text** field.
 - _Example:_ Happy 2nd Birthday, Xahau!
+  
 - Copy the HEX string from the **Hex** field.
 - _Example:_ 486170707920326E642042697274686461792C20586168617521
   
