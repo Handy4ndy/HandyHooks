@@ -66,7 +66,7 @@ Sign in with Xaman and submit using your wallet.
 ## 🎊 5. Celebrate!
 
 Your message is now part of Xahau’s on-chain birthday card!  
-See your wish (and others) in the [Namespace Explorer](https://xahau.xrplwin.com/account/rD1CX9FwgPfCLBmH8k8qvFWxauGMWmWbct/namespaces.
+See your wish (and others) in the [Namespace Explorer](https://xahau.xrplwin.com/account/rD1CX9FwgPfCLBmH8k8qvFWxauGMWmWbct/namespaces).
 
 ---
 
