@@ -1,35 +1,35 @@
-# How to Send a Birthday Message to Xahau's Second Anniversary Card
+# 🎂 How to Send a Birthday Message to Xahau's Second Anniversary Card 🎉
 
-Celebrate Xahau's second anniversary by leaving your message on-chain!  
-Follow these simple steps to convert your message to HEX and submit it using XRPL Win's Raw Transaction Sender.
+Let’s make Xahau’s 2nd birthday unforgettable!  
+Add your wish to the on-chain birthday card in just a few fun steps.
 
 ---
 
-## 1. Write Your Message
+## ✍️ 1. Write Your Message
 
-Write your birthday wish or message for Xahau.  
-Example:  
+Type your birthday wish for Xahau!  
+_Example:_  
 ```
 Happy 2nd Birthday, Xahau! 🎉
 ```
 
 ---
 
-## 2. Convert Your Message to HEX
+## 🧙 2. Convert Your Message to HEX
 
-Use the [XRPL HEX Visualizer](https://transia-rnd.github.io/xrpl-hex-visualizer/) to convert your message:
+Use the [XRPL HEX Visualizer](https://transia-rnd.github.io/xrpl-hex-visualizer/):
 
-- Paste your message into the "Text" field.
-- Copy the resulting HEX string from the "Hex" field.
+- Paste your message into the **Text** field.
+- Copy the HEX string from the **Hex** field.
 
 ---
 
-## 3. Prepare the Transaction JSON
+## 📝 3. Prepare Your Transaction
 
-Copy the template below and fill in:
+Fill in the template below:
 
-- `YOUR_rADDRESS_HERE` with your Xahau account address.
-- `MESSAGE_HEX_STRING_HERE` with your HEX string from step 2.
+- Replace `YOUR_rADDRESS_HERE` with your Xahau address.
+- Replace `MESSAGE_HEX_STRING_HERE` with your HEX string.
 
 ```json
 {
@@ -47,21 +47,22 @@ Copy the template below and fill in:
   "NetworkID": 21337
 }
 ```
+
 ---
 
-## 4. Submit Your Message
+## 🚀 4. Submit Your Message
 
 1. Go to [XRPL Win Raw Transaction Sender](https://xahau.xrplwin.com/tools/tx/raw).
 2. Paste your filled-out JSON into the transaction field.
-3. Sign in then submit the transaction using your wallet.
+3. Sign in and submit using your wallet.
 
 ---
 
-## 5. Celebrate!
+## 🎊 5. Celebrate!
 
-Your message will be stored on-chain as part of Xahau's second birthday card.  
-Check [XRPLWin's Namespace Explorer](https://xahau.xrplwin.com/account/rGe24P5aZckhpfsXSsSwRa68pgtaio4yZw/namespaces/FBE697429F16141BC71E3B91F3823641C8DD258DD58BF076241514754954CB8C) to see your message included!
+Your message is now part of Xahau’s on-chain birthday card!  
+See your wish (and others) in the [Namespace Explorer](https://xahau.xrplwin.com/account/rGe24P5aZckhpfsXSsSwRa68pgtaio4yZw/namespaces/FBE697429F16141BC71E3B91F3823641C8DD258DD58BF076241514754954CB8C).
 
 ---
 
-**Happy Birthday, Xahau! 🎂**
+**Happy Birthday, Xahau! Let’s fill the chain with joy! 🥳**
