@@ -69,7 +69,7 @@ Sign in with Xaman and submit using your wallet.
 ## 🎊 5. Celebrate!
 
 Your message is now part of Xahau’s on-chain birthday card!  
-See your message (and others) in the [Namespace Explorer](https://xahau.xrplwin.com/account/rD1CX9FwgPfCLBmH8k8qvFWxauGMWmWbct/namespaces).
+See your message (and others) in the [Namespace Explorer](https://xahau.xrplwin.com/account/rD1CX9FwgPfCLBmH8k8qvFWxauGMWmWbct/namespaces). <br>
 ** Your message is stored in the namespace beginning with your AccountID **
 
 ---
