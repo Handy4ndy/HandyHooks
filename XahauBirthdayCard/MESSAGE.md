@@ -1,4 +1,4 @@
-# 🎂 How to Send a Birthday Message to Xahau's Second Anniversary Card 🎉
+# 🎂 How to Send a Birthday Message 🎉
 
 <p align="center">
   <img src="./XahauAnniversary.png" alt="Xahau 2nd Anniversary" />
