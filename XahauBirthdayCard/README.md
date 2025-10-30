@@ -22,6 +22,12 @@ This is open, fun, and a perfect example of community-powered, on-chain celebrat
 
 ---
 
+## 🎂 How to Send a Birthday Message 🎉
+
+👉 [Click here for step-by-step instructions!](./MESSAGE.md)
+
+---
+
 ## 🚀 How It Works
 
 1. **Add a Message:**  
