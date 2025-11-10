@@ -66,17 +66,13 @@ To support ongoing development, maintenance, and expansion of the HandyHooks col
 
 Each hook specifies its contribution model in its documentation. Here's an overview of contributions across the collection:
 
-| Hook Category | Contribution Type | Amount | Purpose |
-|---------------|-------------------|---------|---------|
-| SafeGuard | Per Operation | 50,000 drops | Security monitoring |
-| Admin Issuance | Percentage | 5% to treasury | Development funding |
-| Bridge Reserve | Per Bridge | 0.05 XAH | Bridge maintenance |
-| Daily Rewards | Per Claim | 0.05 XAH | Claim processing |
-| NoteHook | None | - | Data storage (no contributions) |
-| Savings Manager | None | - | Financial discipline (no contributions) |
-| And more... | Varies | Varies | Check individual hook docs |
+| Hook Category | Contribution Type | Amount | 
+|---------------|-------------------|---------|
+| SafeGuard | Per Operation | 0.05 XAH |
+| Bridge Reserve | Per Bridge | 0.05 XAH |
+| Daily Rewards | Per Claim | 0.05 XAH |
 
-**All contributions are hardcoded and transparent in the source code. They are only charged on successful operations and do not affect your token amounts or core functionality.**
+**All contributions are hardcoded and transparent in the source code. They are only charged on successful operations and do not affect token amounts or core functionality.**
 
 ## 🔗 Network Availability
 
