@@ -1,4 +1,4 @@
-# SafeGuard Hook – Detailed Explanation
+# SafeGuard Hook 
 
 ## Overview
 
