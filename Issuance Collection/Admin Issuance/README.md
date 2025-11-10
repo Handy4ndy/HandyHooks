@@ -1,8 +1,7 @@
-# Admin Issuance Hook 
-
-A production-ready Xahau hook that enables controlled, dynamic token issuance through invoke transactions. Features whitelisted access control, flexible destination targeting, and automatic 5% treasury allocation.
+# Admin Issuance Hook - Xahau HandyHook Collection
 
 ## Overview
+A production-ready Xahau hook that enables controlled, dynamic token issuance through invoke transactions. Features whitelisted access control, flexible destination targeting, and automatic 5% treasury allocation.
 
 This hook provides secure token issuance capabilities with the following features:
 
