@@ -1,5 +1,5 @@
 //**************************************************************
-// Admin Issuance Hook - Xahau HandyHook Collection
+// Admin Issuance Hook (AIH) - Xahau HandyHook Collection
 // Author: @Handy_4ndy
 //
 // Description:
@@ -27,14 +27,14 @@
 
 #include "hookapi.h"
 
+#define DONE(x) accept(SBUF("AIH:: Success :: " x), __LINE__)
+#define NOPE(x) rollback(SBUF("AIH:: Error :: " x), __LINE__)
+#define GUARD(maxiter) _g(__LINE__, (maxiter) + 1)
+
 #define FLIP_ENDIAN(n) ((uint32_t) (((n & 0xFFU) << 24U) | \
                                    ((n & 0xFF00U) << 8U) | \
                                  ((n & 0xFF0000U) >> 8U) | \
                                 ((n & 0xFF000000U) >> 24U)))
-
-#define DONE(x) accept(SBUF(x), __LINE__)
-#define NOPE(x) rollback(SBUF(x), __LINE__)
-#define GUARD(maxiter) _g(__LINE__, (maxiter) + 1)
 
 #define UINT64_FROM_BUF(buf) \
     (((uint64_t)(buf)[0] << 56) + ((uint64_t)(buf)[1] << 48) + \
@@ -78,7 +78,7 @@ static uint8_t dev_contribution_acc[20] = {0xCCU, 0x41U, 0x96U, 0xC1U, 0xF2U, 0x
 
 int64_t hook(uint32_t reserved) {
 
-    TRACESTR("Admin Issuance: called");
+    TRACESTR("AIH :: Admin Issuance Hook: called");
 
     if (otxn_type() != 99)
         DONE("Non-INVOKE transaction passed through.");
@@ -184,9 +184,9 @@ int64_t hook(uint32_t reserved) {
     
     uint8_t contribution_emithash[32];
     if (emit(SBUF(contribution_emithash), SBUF(contribution_txn)) != 32)
-        TRACESTR("Admin Issuance :: Warning :: Failed to emit development contribution payment.");
+        TRACESTR("Failed to emit development contribution payment.");
 
-    DONE("Admin Issuance: tokens issued to destination + 5% to treasury successfully.");   
+    DONE("Tokens issued to destination + 5% to treasury successfully.");   
     _g(1,1);
     return 0;    
 }
