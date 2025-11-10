@@ -1,65 +1,153 @@
-# HandyHooks
+# HandyHooks - Mainnet/Testnet Production Hooks
 
-Welcome to **HandyHooks**, a collection of pre-built Xahau Hooks for the Xahau Network. This repository hosts Hooks designed for production use on Mainnet, alongside the educational **Xahau Hooks 101** series. All Hooks are written in C, compiled to WebAssembly (WASM) using the [Xahau Hooks Builder](https://hooks-builder.xrpl.org/develop) starter template, and available for anyone to use, edit, and distribute. Each Hook includes its own `README` with installation instructions and detailed information.
+Welcome to the **HandyHooks Production Collection** - a curated set of Xahau hooks that are live and operational on both mainnet and testnet environments. These hooks are ready for installation using their respective hook hashes and represent battle-tested, production-ready smart contract solutions.
 
-## What is Xahau?
+## 🔧 Important Notice About Service Fees
 
-Xahau is a decentralized blockchain platform that enables secure, efficient, and transparent transactions. Its immutable ledger ensures data integrity, making it ideal for financial and automated applications.
+**These hooks contain hardcoded service fees that fund ongoing development of the HandyHooks collection.** All code is published open source with transparent service fee structures. The fees support continued development, maintenance, and creation of new hooks for the community.
 
-## What are Hooks?
+- ✅ **Open Source**: All source code is publicly available
+- ✅ **Transparent**: Service fees are clearly documented in each hook
+- ✅ **Community Focused**: Fees support ongoing development for everyone
+- ✅ **Production Ready**: Tested and deployed on live networks
 
-Hooks are compact, efficient C programs attached to Xahau accounts, allowing users to automate actions based on specific conditions or events. Examples include forwarding payments, enforcing transaction rules, or managing state. Hooks are executed on the Xahau Network, extending its functionality for both Testnet and Mainnet applications.
+## 📦 Available Hook Categories
 
-## About Hook Builder
+### 🏦 Issuance Collection
+Advanced token issuance and management hooks for sophisticated DeFi applications.
 
-[Xahau Hooks Builder](https://hooks-builder.xrpl.org/develop) is a user-friendly, web-based tool for creating, testing, and deploying Hooks. It simplifies development with:
-- A code editor for writing C Hooks.
-- A simulated Testnet environment for testing.
-- One-click deployment to Testnet or Mainnet accounts.
+#### 🏦 Admin Issuance
+**Purpose**: Controlled token issuance with whitelist access and automatic treasury allocation
+- **Features**: Invoke-only processing, whitelist access control, dynamic destinations, 5% auto-treasury
+- **Service Fee**: Built-in treasury allocation mechanism
+- **Use Cases**: Project token distribution, controlled minting, treasury management
 
-All Hooks in this repository are compiled using the Hooks Builder starter template, ensuring Mainnet compatibility.
+### 📝 NoteHook
+**Purpose**: On-chain note storage and management system
+- **Features**: Owner-only access, dynamic note management, on-chain storage
+- **Service Fee**: Minimal storage operation fees
+- **Use Cases**: Personal notes, documentation, audit trails, simple data storage
+- **Status**: ✅ Live on Mainnet/Testnet
 
-## Tools
-Use these online tools to work with HandyHooks—no local setup required:
-- **[Xahau Hooks Builder](https://hooks-builder.xrpl.org/develop)**: Write, compile, and deploy Hooks using the starter template.
-- **[XRPLWin Xahau Testnet Tools](https://xahau-testnet.xrplwin.com/tools)**: Create and test transactions on the Testnet.
-- **[XRPLWin Hook Management](https://xahau-testnet.xrplwin.com/account/YOUR_WALLET_RADDRESS_HERE/manage/hooks)**: Deploy and manage Hooks (replace `YOUR_WALLET_RADDRESS_HERE` with your account, e.g., `rTest123...`).
-- **[Xahau Testnet Faucet](https://xahau-test.net/faucet)**: Fund Testnet accounts.
-- **[Xahau Explorer](https://test.xahauexplorer.com/en)**: Verify transactions and Hook details.
+### 🛡️ SafeGuard
+**Purpose**: Transaction safety and validation system
+- **Features**: Amount limits, transaction filtering, safety controls
+- **Service Fee**: Security monitoring fees (50,000 drops per operation)
+- **Use Cases**: Account protection, transaction limits, security automation
+- **Status**: ✅ Live on Mainnet/Testnet
 
+## 🚀 Installation Guide
 
-## Repository Structure
-The repository is organized into directories based on Hook purpose:
-- **Xahau-Hooks-101**: Contains the **Xahau Hooks 101** series, a collection of educational Hooks for learning Xahau Hook development. See the [Xahau-Hooks-101 README](Xahau-Hooks-101/README.md) for details on these beginner-friendly examples.
-- **Production Hooks**: Includes Hooks designed for real-world use, such as `ForwardSplit`. Each Hook has its own directory and `README` with specific instructions.
+### Prerequisites
+- Active Xahau account with sufficient XAH for hook installation
+- Understanding of hook installation process
+- Knowledge of transaction parameters for your chosen hook
 
-### Example Hook: ForwardSplit
-- **Purpose**: Forwards incoming XAH payments to three predefined accounts, distributing a percentage of the payment based on specified parameters.
-- **Hook Parameters**:
-  - `DEST1`, `DEST2`, `DEST3`: Destination account addresses.
-  - `PCT1`, `PCT2`, `PCT3`: Percentage splits (e.g., 50%, 30%, 20%).
-- **Installation**:
-  - Open `ForwardSplit.c` in Xahau Hooks Builder.
-  - Compile with the starter template.
-  - Deploy via Hooks Builder or XRPLWin Hook Management.
-- **Details**: See the [ForwardSplit README](ForwardSplit/README.md) for full instructions and test cases.
+### Installation Steps
 
-## Testing
-1. **Setup Accounts**:
-   - Fund a Testnet account (e.g., `rTest123...`) using the Testnet Faucet.
-2. **Deploy Hooks**:
-   - Compile in Xahau Hooks Builder and deploy via Hooks Builder or XRPLWin Hook Management.
-3. **Test Transactions**:
-   - Send Payments (e.g., XAH or IOU) using XRPLWin Tools.
-4. **Verify**:
-   - Check results in Xahau Explorer or Hooks Builder logs (`TRACESTR`/`TRACEHEX`).
+1. **Choose Your Hook**: Select from the categories above based on your needs
+2. **Review Documentation**: Each hook folder contains detailed README with:
+   - Installation parameters
+   - Transaction parameters  
+   - Usage examples
+   - Service fee structure
+3. **Prepare Installation Transaction**: Use the hook hash and required parameters
+4. **Deploy**: Submit the SetHook transaction to install on your account
+5. **Test**: Verify functionality with test transactions
 
-## Debugging Tips
-- **Logs**: Use `TRACESTR` and `TRACEHEX` to track execution.
-- **Xahau Explorer**: Verify `TransactionType`, `Amount`, and `HookHash`.
-- **Common Issues**:
-  - `Execution failure (no exit type specified)`: Caused by invalid `sfAmount` access. Use `uint8_t amount[48]` and check `otxn_field` returns.
-  - Non-Payment transactions: Ensure Hooks are set for `ttPayment`.
+### Hook Hash Information
+Hook hashes for mainnet/testnet deployment are provided in each individual hook's README file.
 
-## Contributing
-Explore the Hooks, integrate them into your projects, or contribute new ones! Submit issues or PRs to enhance **HandyHooks**. For educational Hooks, check out the [Xahau Hooks 101](Xahau-Hooks-101/README.md) subfolder.
+## 💰 Service Fee Structure
+
+Each hook implements transparent service fees to support ongoing development:
+
+| Hook Category | Fee Type | Amount | Purpose |
+|---------------|----------|---------|---------|
+| SafeGuard | Per Operation | 50,000 drops | Security monitoring |
+| Admin Issuance | Percentage | 5% to treasury | Development funding |
+| Bridge Vault | Transaction | Variable | Bridge maintenance |
+| Daily Claim | Processing | Minimal | Claim processing |
+| NoteHook | Storage | Minimal | Data storage |
+
+**All fees are hardcoded and transparent in the source code.**
+
+## 🔗 Network Availability
+
+### Mainnet
+- **Network**: Xahau Mainnet
+- **Status**: Production Ready
+- **Use Case**: Live applications, real value transactions
+
+### Testnet  
+- **Network**: Xahau Testnet
+- **Status**: Testing Environment
+- **Use Case**: Development, testing, experimentation
+
+## 📖 Documentation Standards
+
+Each hook includes comprehensive documentation:
+
+- **README.md**: Complete installation and usage guide
+- **Source Code**: Fully commented C implementation
+- **Examples**: Real transaction examples
+- **Parameters**: Detailed parameter specifications
+- **Error Handling**: Complete error code reference
+
+## 🛠️ Development Resources
+
+### Tools & Utilities
+- **[Xahau Hooks Builder](https://hooks-builder.xrpl.org/develop)**: Compile and deploy hooks
+- **[Xahau Hooks Technical](https://xrpl-hooks.readme.io/reference/hook-api-conventions)**: API reference
+- **[Message HEX String](https://transia-rnd.github.io/xrpl-hex-visualizer/)**: Parameter converter
+- **[XahauExplorer](https://xahau.xrplwin.com/)**: Transaction monitoring
+
+### Community Support
+- **GitHub Issues**: Report bugs and request features
+- **Documentation**: Detailed guides in each hook folder
+- **Open Source**: All code available for review and learning
+
+## ⚠️ Important Considerations
+
+### Before Installing
+1. **Understand Service Fees**: Review the fee structure for your chosen hook
+2. **Test First**: Use testnet before mainnet deployment
+3. **Read Documentation**: Thoroughly review the hook's README
+4. **Parameter Preparation**: Ensure you have all required installation parameters
+5. **Account Security**: Understand the hook's access control mechanisms
+
+### Security Notes
+- Hooks modify your account's transaction processing
+- Only install hooks you understand completely
+- Test all functionality on testnet first
+- Keep your account secure with proper key management
+
+## 🤝 Contributing to HandyHooks
+
+While these production hooks have hardcoded service fees, we welcome:
+
+- **Bug Reports**: Help us improve reliability
+- **Documentation**: Enhance guides and examples  
+- **Feature Requests**: Suggest new functionality
+- **Community Hooks**: Contribute to our broader collection
+
+## 📄 License & Legal
+
+- **License**: Open source (see individual LICENSE files)
+- **Service Fees**: Hardcoded for development funding
+- **Transparency**: All fees disclosed in documentation
+- **Usage**: Free to use with disclosed service fees
+
+## 🎯 Getting Started
+
+1. **Browse Categories**: Review the available hook types above
+2. **Select a Hook**: Choose based on your application needs
+3. **Read Documentation**: Study the specific hook's README
+4. **Test on Testnet**: Deploy and test before mainnet use
+5. **Go Live**: Deploy to mainnet when ready
+
+---
+
+*The HandyHooks collection represents months of development and testing. Service fees support continued innovation and maintenance of these valuable tools for the Xahau ecosystem.*
+
+For detailed information on any specific hook, navigate to its subdirectory and review the comprehensive README and source code provided.
