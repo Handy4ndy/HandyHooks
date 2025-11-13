@@ -1,4 +1,4 @@
-# Single Beneficiary Contract (SBC) – - Xahau HandyHook Collection
+# Single Beneficiary Contract (SBC) – Xahau HandyHook Collection
 
 A production-ready Xahau hook for automated single-beneficiary distribution using a Dead Man's Switch. This contract enables secure, time-based transfer of the entire account balance to a designated beneficiary if the hook account becomes inactive.
 
