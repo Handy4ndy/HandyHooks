@@ -1,0 +1,133 @@
+{
+  "manifestVersion": "1",
+  "name": "single-beneficiary-contract",
+  "version": "1.0.0",
+  "publisher": "rKdrRL3dVhfXVqx3FPMB9Ef6BXSmuwzFXr",
+  "repo": "https://github.com/Handy4ndy/HandyHooks",
+  "networks": [
+    "xahau-testnet"
+  ],
+  "roles": {
+    "hook-account": {
+      "label": "Hook Account",
+      "description": "This is the account where the hook will be installed."
+    },
+    "beneficiary": {
+      "label": "Beneficiary",
+      "description": "This is the account that will revieve the funds from the Hook Account, when the delegate authorises the transfer."
+    },
+    "delegate": {
+      "label": "Delegate",
+      "description": "This is the account that will be authorised to invoke the transfer, when the threshold has elapsed."
+    }
+  },
+  "hooks": [
+    {
+      "id": "SBC",
+      "artifact": {
+        "toolchain": "hooks-c",
+        "source_path": "/Beneficiary/SingleBeneficiary/SingleBeneficiary.c"
+      },
+      "HookOn": [
+        "PAYMENT",
+        "INVOKE"
+      ],
+      "HookCanEmit": [
+        "PAYMENT"
+      ],
+      "HookParameters": [
+        {
+          "HookParameterName": "BENEFICIARY",
+          "HookParameterValue": {
+            "type": "account",
+            "value": "{{beneficiary}}",
+            "encoding": "hex"
+          }
+        },
+        {
+          "HookParameterName": "DELEGATE",
+          "HookParameterValue": {
+            "type": "account",
+            "value": "{{delegate}}",
+            "encoding": "hex"
+          }
+        },
+        {
+          "HookParameterName": "THRESHOLD",
+          "HookParameterValue": {
+            "type": "uint32",
+            "value": 60
+          }
+        }
+      ],
+      "HookNamespace": "FBE697429F16141BC71E3B91F3823641C8DD258DD58BF076241514754954CB8C",
+      "postInstallSettings": [
+        {
+          "name": "Authorise Transer",
+          "description": "When the threshold has elapsed on the hook account, the delegate may authorize the transfer to the beneficiary.",
+          "TransactionType": "Invoke",
+          "Destination": "{{hook-account}}",
+          "Blob": [],
+          "userConfig": {
+            "SEND": {
+              "label": "Beneficiary Transfer",
+              "inputType": "bytes",
+              "encoding": "hex",
+              "default": "01",
+              "description": "This is the invoke command to be sent from the delegate to the hook-account, to authorise the transfer to the beneficiary ( When the timer has elapsed )",
+              "required": true
+            }
+          },
+          "HookParameters": [
+            {
+              "HookParameterName": "SEND",
+              "HookParameterValue": {
+                "type": "hex",
+                "value": "01"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "install": [
+    {
+      "TransactionType": "SetHook",
+      "description": "Install the Hook on the address you wish to transfer the funds from.",
+      "required": true,
+      "role": "hook-account",
+      "hookIds": [
+        "SBC"
+      ]
+    }
+  ],
+  "description": "This contract enables secure, time-based transfer of the entire account balance to a designated beneficiary if the hook account becomes inactive.",
+  "license": "MIT",
+  "userConfig": {
+    "BENEFICIARY": {
+      "label": "Beneficiary rAddress",
+      "inputType": "account",
+      "encoding": "hex",
+      "default": "rPYfDFdEm5hdaNiPZL899mv3KxCAc1TPww",
+      "description": "The Beneficary rAddress that will recieve the funds from the Hook Account",
+      "required": true
+    },
+    "DELEGATE": {
+      "label": "Delegate rAddress",
+      "inputType": "account",
+      "encoding": "hex",
+      "default": "r9aEeYWPVTKjR57gyZYC69Fr1dnV2FkU64",
+      "description": "This is the account that will be authorised to invoke the transfer, when the threshold has elapsed.",
+      "required": true
+    },
+    "THRESHOLD": {
+      "label": "Inactivty Threshold",
+      "inputType": "uint32",
+      "encoding": "uint32",
+      "default": "60",
+      "description": "This is the inacivity timer that prevents the Delegate from authorising the transfer until it has elapsed.",
+      "required": true
+    }
+  }
+}
