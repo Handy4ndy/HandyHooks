@@ -1,0 +1,163 @@
+{
+  "t": "[TOKEN_TICKER]",
+  "n": "[TOKEN_DISPLAY_NAME]",
+  "d": "Utility token issued via an open-source phased IDO Hook on Xahau Network. Features time-decaying multipliers, soft-cap protection, automatic unwind/refund, and on-chain transparency for fair fundraising.",
+  "i": "[ICON_URI e.g. ipfs://... or https://...]",
+  "ac": "defi",
+  "as": "fundraising",
+  "in": "[ISSUER_OR_PROJECT_NAME]",
+  "us": [
+    {
+      "u": "[PROJECT_WEBSITE_URL]",
+      "c": "website",
+      "t": "Official Website"
+    },
+    {
+      "u": "[DOCUMENTATION_URL]",
+      "c": "docs",
+      "t": "Documentation & Usage Guide"
+    },
+    {
+      "u": "[WHITEPAPER_OR_DISCLOSURES_IPFS_OR_URL]",
+      "c": "docs",
+      "t": "Whitepaper, Risk Disclosures & Legal Terms"
+    },
+    {
+      "u": "[SOCIAL_MEDIA_URL e.g. x.com/...]",
+      "c": "social",
+      "t": "Project Updates"
+    },
+    {
+      "u": "explorer.xahau.network",
+      "c": "other",
+      "t": "Xahau Explorer (View On-Chain Activity)"
+    }
+  ],
+  "ai": {
+    "platform": {
+      "network": "Xahau",
+      "programmability": "Account-attached Hooks (WebAssembly) for on-ledger automation and transaction logic",
+      "token_type": "Issued IOU (fungible token created via payments/Remits after TrustSet)",
+      "key_features": [
+        "4-phase fundraising window with configurable multipliers (e.g. 100x → 75x → 50x → 25x)",
+        "Soft cap threshold with automatic post-window refund/unwind if unmet",
+        "On-chain global counters: executions, total raised, total issued, per-phase stats",
+        "Per-user participation tracking via hierarchical state namespaces",
+        "WP_LNK parameter during install → used as access token to imply acknowledgment of disclosures"
+      ]
+    },
+    "ido_mechanics": {
+      "phases": [
+        {
+          "number": 1,
+          "status": "First Phase",
+          "multiplier": "[PHASE1_MULTIPLIER e.g. 100x]",
+          "duration": "configurable (e.g. [EXAMPLE_LEDGERS] ledgers ≈ [DAYS] days)"
+        },
+        {
+          "number": 2,
+          "status": "Second Phase",
+          "multiplier": "[PHASE2_MULTIPLIER e.g. 75x]",
+          "duration": "same as phase 1"
+        },
+        {
+          "number": 3,
+          "status": "Mid Phase",
+          "multiplier": "[PHASE3_MULTIPLIER e.g. 50x]",
+          "duration": "same as phase 1"
+        },
+        {
+          "number": 4,
+          "status": "Final Phase",
+          "multiplier": "[PHASE4_MULTIPLIER e.g. 25x]",
+          "duration": "same as phase 1"
+        },
+        {
+          "number": 5,
+          "status": "Cooldown",
+          "multiplier": "0 (IDO closed, unwind only)",
+          "duration": "same as phase 1"
+        }
+      ],
+      "soft_cap": "configurable (e.g. [AMOUNT] XAH in drops)",
+      "unwind_mechanism": "If soft cap unmet after window: participants return exact IOU balance → Hook emits proportional XAH refund via Remit",
+      "participation_flow": "XAH Payment to issuer during active window → Hook emits Remit with multiplied IOU; rejects invalid/out-of-window attempts"
+    },
+    "tokenomics": {
+      "total_supply": "[CONFIGURABLE_TOTAL_SUPPLY e.g. 1,000,000,000]",
+      "initial_distribution": "Primarily via phased IDO; remainder configurable (e.g. vested team, liquidity pools, ecosystem incentives, reserves)",
+      "utility": [
+        "Governance rights",
+        "Potential staking/yield mechanisms",
+        "Fee discounts or access perks",
+        "Ecosystem feature unlocks (project-specific)"
+      ]
+    },
+    "compliance": {
+      "regulatory_classifications": {
+        "us_sec": "Self-assessed as utility token: Value from decentralized participation/utility, not centralized profit expectation (Howey Test review recommended).",
+        "eu_mica": "Crypto-asset (utility type); disclosures provided via IPFS-linked documentation; follow CASP rules if public offer exceeds thresholds.",
+        "uk_fca": "Cryptoasset; prominent risk warnings; no unauthorized high-risk promotions to retail users.",
+        "global": "On-chain transparency supports FATF Travel Rule principles; users advised to apply local AML/KYC standards."
+      },
+      "risk_disclosures": {
+        "general": [
+          "High risk of total loss due to volatility, illiquidity, or project failure.",
+          "No guaranteed value, returns, secondary market, or adoption.",
+          "Hook/smart-logic risks: potential bugs despite best practices."
+        ],
+        "ido_specific": [
+          "Soft cap not met → unwind/refund mode may involve delays.",
+          "Early-phase higher multipliers reflect higher risk/reward timing.",
+          "Possible regulatory reclassification in certain jurisdictions."
+        ],
+        "disclaimer": "This is not investment, financial, or legal advice. All participants bear full responsibility. Consult qualified professionals and review local laws."
+      },
+      "kyc_aml_policy": {
+        "approach": "Self-certification by participants; issuers may implement additional checks per jurisdiction.",
+        "privacy": "On-chain data is public and immutable by design; minimize off-chain personal data collection.",
+        "standards": "No facilitation of sanctioned entities; issuers should monitor for compliance."
+      },
+      "terms_of_service": {
+        "acceptance": "Sending XAH to the issuer account and/or providing WP_LNK during setup constitutes acknowledgment of all linked terms, risks, and disclosures.",
+        "eligibility": "Must be 18+ and not in restricted/sanctioned jurisdictions. Participants self-certify compliance.",
+        "limitations": "Issuer may pause, modify, or terminate fundraising for security, compliance, or technical reasons.",
+        "liability": "Services and Hook logic provided 'AS IS'; no liability accepted for market losses, technical issues, or third-party actions.",
+        "governing_law": "International blockchain norms; disputes recommended via arbitration in a neutral jurisdiction.",
+        "amendments": "Terms subject to update; continued participation implies acceptance."
+      },
+      "audit_and_security": {
+        "hook_audit": {
+          "status": "Pending / Planned / Completed (issuer to specify)",
+          "recommended_auditors": "Independent firms such as PeckShield, Certik, SlowMist, or equivalent",
+          "target_or_completion_date": "[YYYY-MM or 'Before real funds accepted']",
+          "report_uri": "[AUDIT_REPORT_IPFS_OR_URL] (placeholder – replace with actual link)"
+        },
+        "additional_audits": {
+          "status": "Pending / Planned / Completed (if separate token or tooling audited)",
+          "report_uri": "[ADDITIONAL_AUDIT_URI] (placeholder)"
+        },
+        "security_features": [
+          "Guard macros to prevent common errors (overflows, reentrancy, etc.)",
+          "Restricted invoke access (only issuer/admin)",
+          "Atomic emit-based token issuance",
+          "State integrity and counter validation"
+        ],
+        "recommendation": "All deployers/issuers MUST obtain independent security audits before accepting real-value transactions. Audits materially reduce risk and build user confidence."
+      },
+      "tax_reporting": {
+        "user_responsibility": "Participants solely responsible for their own tax and reporting obligations.",
+        "platform_support": "On-chain transaction history available via explorers for user reference."
+      },
+      "sustainability": {
+        "note": "Xahau uses efficient consensus; issuers may allocate portions of raised funds to environmental or social impact initiatives."
+      }
+    },
+    "contact_and_support": {
+      "website": "[ISSUER_WEBSITE_URL]",
+      "email": "[SUPPORT_EMAIL e.g. support@[DOMAIN]]",
+      "social": "[SOCIAL_HANDLE_OR_URL]",
+      "legal": "[LEGAL_CONTACT e.g. legal@[DOMAIN]]"
+    }
+  }
+}
