@@ -8,18 +8,14 @@ Purpose
 
 Structure
 - Provider
-  - [HandyHooks/Blacklist/Provider/BlacklistProvider.c](HandyHooks/Blacklist/Provider/BlacklistProvider.c#L1) — Provider hook source. Implements `ADD_BLACKLIST`, `REMOVE_BLACKLIST`, and `CHECK_BLACKLIST` invoke commands and exposes blacklist state via namespaced keys (`BLACKLISTED`).
-  - [HandyHooks/Blacklist/Provider/deploy.md](HandyHooks/Blacklist/Provider/deploy.md#L1) — Deploy + test guide for the Provider on Xahau Testnet.
-  - [HandyHooks/Blacklist/Provider/README.md](HandyHooks/Blacklist/Provider/README.md#L1) — Provider notes (brief).
+  - [HandyHooks/Blacklist/Provider/BlacklistProvider.c](https://github.com/Handy4ndy/HandyHooks/blob/main/Blacklist/Provider/BlacklistProvider.c) — Provider hook source. Implements `ADD_BLACKLIST`, `REMOVE_BLACKLIST`, and `CHECK_BLACKLIST` invoke commands and exposes blacklist state via namespaced keys (`BLACKLISTED`).
+  - [HandyHooks/Blacklist/Provider/deploy.md](https://github.com/Handy4ndy/HandyHooks/blob/main/Blacklist/Provider/deploy.md) — Deploy + test guide for the Provider on Xahau Testnet.
+  - [HandyHooks/Blacklist/Provider/README.md](https://github.com/Handy4ndy/HandyHooks/blob/main/Blacklist/Provider/README.md)) — Provider notes (brief).
 
 - Trustee
-  - [HandyHooks/Blacklist/Trustee/BlacklistTrustee.c](HandyHooks/Blacklist/Trustee/BlacklistTrustee.c#L1) — Trustee hook source. Reads configuration via Invoke parameters (e.g., `PROVIDER_ACC`) and enforces blacklist checks on Payments/Invoke flows.
-  - [HandyHooks/Blacklist/Trustee/deploy.md](HandyHooks/Blacklist/Trustee/deploy.md#L1) — Deploy + test guide for the Trustee on Xahau Testnet (includes example JSON payloads to paste into Builder Test UI).
-  - [HandyHooks/Blacklist/Trustee/README.md](HandyHooks/Blacklist/Trustee/README.md#L1) — Trustee notes (brief).
-
-- Top-level
-  - [HandyHooks/Blacklist/deploy.md](HandyHooks/Blacklist/deploy.md#L1) — Short overview linking the Provider and Trustee guides.
-  - [HandyHooks/Blacklist/README.md](HandyHooks/Blacklist/README.md#L1) — (this file) overall summary and quick start.
+  - [HandyHooks/Blacklist/Trustee/BlacklistTrustee.c](https://github.com/Handy4ndy/HandyHooks/blob/main/Blacklist/Trustee/BlacklistTrustee.c) — Trustee hook source. Reads configuration via Invoke parameters (e.g., `PROVIDER_ACC`) and enforces blacklist checks on Payments/Invoke flows.
+  - [HandyHooks/Blacklist/Trustee/deploy.md](https://github.com/Handy4ndy/HandyHooks/blob/main/Blacklist/Trustee/deploy.md) — Deploy + test guide for the Trustee on Xahau Testnet (includes example JSON payloads to paste into Builder Test UI).
+  - [HandyHooks/Blacklist/Trustee/README.md](https://github.com/Handy4ndy/HandyHooks/blob/main/Blacklist/Trustee/README.md) — Trustee notes (brief).
 
 Quick start (deploy & basic test)
 1. Create Testnet accounts in Builder: one Provider account, one Trustee account, and at least one normal user and one attacker account (for negative tests).
