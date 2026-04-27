@@ -5,14 +5,14 @@ Overview
 - Source: HandyHooks/Blacklist/Trustee/BlacklistTrustee.c
 
 Prerequisites
-- Create the `provider` and `attacker` accounts.
+- Create the `provider` and `bad_actor` accounts.
 - Deploy the Blacklist Provider hook on the `provider`.
-- Invoke the `provider` with a transaction that adds `attacker` to the blacklist.
+- Invoke the `provider` with a transaction that adds `bad_actor` to the blacklist.
 reference: 
 
 Xahau Testnet — Hooks Builder (step-by-step)
 1. Fund test accounts
-  - Use https://builder.xahau.network/deploy to create/fund `trustee`and `userA` Testnet accounts.
+  - Use https://builder.xahau.network/deploy to create/fund `trustee`and `user` Testnet accounts.
 
 2. Prepare & compile
   - In Builder → `Develop` paste `HandyHooks/Blacklist/Trustee/BlacklistTrustee.c` and `Compile to WASM`.
@@ -63,11 +63,11 @@ Xahau Testnet — Hooks Builder (step-by-step)
     }
     ```
 
-    - `userA` Payment, simple payment of 100 XAH to the `trustee`.
+    - `user` Payment, simple payment of 100 XAH to the `trustee`.
     ```json
     {
         "TransactionType": "Payment",
-        "Account": `userA`,
+        "Account": `user`,
         "Destination": `trustee`,
         "Amount": "100000000",
         "Fee": "12",
@@ -77,12 +77,12 @@ Xahau Testnet — Hooks Builder (step-by-step)
     }
     ```
 
-    - `attacker` Payment, simple payment of 100 XAH to the `trustee`.
+    - `bad_actor` Payment, simple payment of 100 XAH to the `trustee`.
 
     ```json
     {
         "TransactionType": "Payment",
-        "Account": `attacker`,
+        "Account": `bad_actor`,
         "Destination": `trustee`,
         "Amount": "100000000",
         "Fee": "12",
@@ -94,8 +94,8 @@ Xahau Testnet — Hooks Builder (step-by-step)
 
   - Test cases:
     - Trustee operations with invoke transactions: expect success.
-    - Operations from `userA`: expect success.
-    - Operations from `attacker` (blacklisted): expect rejection.
+    - Operations from `user`: expect success.
+    - Operations from `bad_actor` (blacklisted): expect rejection.
 
 5. Verify & debug
   - Check TRACESTR/TRACEHEX logs in Builder for runtime traces and errors.

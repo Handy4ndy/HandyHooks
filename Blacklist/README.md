@@ -22,7 +22,7 @@ Structure
   - [HandyHooks/Blacklist/README.md](HandyHooks/Blacklist/README.md#L1) — (this file) overall summary and quick start.
 
 Quick start (deploy & basic test)
-1. Create Testnet accounts in Builder: one Provider account, one Trustee account, and at least one normal user and one attacker account (for negative tests).
+1. Create Testnet accounts in Builder: one Provider account, one Trustee account, and at least one normal user and one bad_actor account (for negative tests).
 2. Deploy Provider
    - In Builder → Developer paste `Provider/BlacklistProvider.c`, `Compile to WASM`, then Builder → Deploy → Set Hook under the Provider account.
    - Set `HookOn` triggers (Payments/Invoke) and provide install parameters if required.
@@ -30,9 +30,9 @@ Quick start (deploy & basic test)
    - In Builder → Developer paste `Trustee/BlacklistTrustee.c`, compile, then Deploy under the Trustee account.
    - Configure `PROVIDER_ACC` (Invoke) pointing to the Provider hook account (use accountID hex via hooks.services conversion) and set `HookOn` appropriately.
 4. Run test flows
-   - Use Provider `Invoke` (ADD_BLACKLIST) to add the `attacker` AccountID to the Provider blacklist.
-   - Send a Payment from `userA` to the Trustee — expect success.
-   - Send a Payment from `attacker` to the Trustee — expect rejection if the Trustee enforces blacklist checks.
+   - Use Provider `Invoke` (ADD_BLACKLIST) to add the `bad_actor` AccountID to the Provider blacklist.
+   - Send a Payment from `user` to the Trustee — expect success.
+   - Send a Payment from `bad_actor` to the Trustee — expect rejection if the Trustee enforces blacklist checks.
 
 Testing notes & gotchas
 - HookParameter values that represent AccountIDs must be the 20‑byte hex AccountID bytes (not the human-readable r-address). Convert using https://hooks.services/tools/raddress-to-accountid.

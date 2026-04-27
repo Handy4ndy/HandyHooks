@@ -6,7 +6,7 @@ Overview
 
 Xahau Testnet — Hooks Builder (step-by-step)
 1. Fund test accounts
-  - Open https://builder.xahau.network/deploy and create/fund two Testnet accounts: `provider` and `attacker` (use the Builder faucet/fund flow).
+  - Open https://builder.xahau.network/deploy and create/fund two Testnet accounts: `provider` and `bad_actor` (use the Builder faucet/fund flow).
 
 2. Prepare & compile
   - In Builder → `Develop` paste `HandyHooks/Blacklist/Provider/BlacklistProvider.c` and `Compile to WASM`.
@@ -18,7 +18,7 @@ Xahau Testnet — Hooks Builder (step-by-step)
 4. Setup / Run tests (Builder `Test` UI)
   - Create the following transactions (replace account placeholders with actual Testnet addresses):
     
-    - `provider` Invoke, Hook Parameter to add `attacker` to the blacklist (replace `ATTACKER_ACCOUNTID` [hooks.Services](https://hooks.services/tools/raddress-to-accountid)):
+    - `provider` Invoke, Hook Parameter to add `bad_actor` to the blacklist (replace `BAD_ACTOR_ACCOUNTID` [hooks.Services](https://hooks.services/tools/raddress-to-accountid)):
 
     ```json
     {
@@ -30,7 +30,7 @@ Xahau Testnet — Hooks Builder (step-by-step)
             {
                 "HookParameter": {
                     "HookParameterName": "4144445F424C41434B4C495354",    // ADD_BLACKLIST (HEX)
-                    "HookParameterValue": "ATTACKER_ACCOUNTID"    // `attacker` (AccountID)
+                    "HookParameterValue": "BAD_ACTOR_ACCOUNTID"    // `bad_actor` (AccountID)
                 }
             }
         ],
@@ -38,7 +38,7 @@ Xahau Testnet — Hooks Builder (step-by-step)
     }
     ```
 
-    - `provider` Invoke, Hook Parameter to Remove `attacker` from the blacklist (replace `ATTACKER_ACCOUNTID`[hooks.Services](https://hooks.services/tools/raddress-to-accountid) ):
+    - `provider` Invoke, Hook Parameter to Remove `bad_actor` from the blacklist (replace `BAD_ACTOR_ACCOUNTID`[hooks.Services](https://hooks.services/tools/raddress-to-accountid) ):
 
      ```json
     {
@@ -50,7 +50,7 @@ Xahau Testnet — Hooks Builder (step-by-step)
             {
                 "HookParameter": {
                       "HookParameterName": "52454D4F56455F424C41434B4C495354",    // REMOVE_BLACKLIST (HEX)
-                    "HookParameterValue": "ATTACKER_ACCOUNTID"    // `attacker` (AccountID)
+                    "HookParameterValue": "BAD_ACTOR_ACCOUNTID"    // `bad_actor` (AccountID)
                 }
             }
         ],
@@ -58,12 +58,12 @@ Xahau Testnet — Hooks Builder (step-by-step)
     }
     ```
 
-    - `attacker` Payment, simple payment of 100 XAH to the `provider`.
+    - `bad_actor` Payment, simple payment of 100 XAH to the `provider`.
 
     ```json
     {
         "TransactionType": "Payment",
-        "Account": `attacker`,
+        "Account": `bad_actor`,
         "Destination": `provider`,
         "Amount": "100000000",
         "Fee": "12",
@@ -75,14 +75,14 @@ Xahau Testnet — Hooks Builder (step-by-step)
 
   - Test cases:
     - Provider operations with invoke transactions: expect success.
-    - Operations from `attacker` (when blacklisted): expect rejection.
+    - Operations from `bad_actor` (when blacklisted): expect rejection.
 
 5. Verify & debug
   - Inspect Builder logs (TRACESTR / TRACEHEX) for hook runtime traces and error messages.
   - Confirm transaction status and effect using Xahau Explorer: https://test.xahauexplorer.com/en and XRPLWin Hook Management: https://xahau-testnet.xrplwin.com/.
 
 Notes
-- Keep the test account keys handy in the Builder to sign tests. Use separate accounts for attacker vs normal users to avoid state confusion.
+- Keep the test account keys handy in the Builder to sign tests. Use separate accounts for bad_actor vs normal users to avoid state confusion.
 - The hook expects specific `Invoke` payload formats, review the header from the .c code for a quick reminder.
 
 Useful references
