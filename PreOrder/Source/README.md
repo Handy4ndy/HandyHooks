@@ -119,6 +119,32 @@ Namespace = 20-byte AccountID, zero-padded to 32 bytes. Owner = hook account.
 | `QTY` | 8 | Total quantity ordered |
 | `RFND` | 24 | After refund: amount (8) + quantity (8) + refund time (8) |
 
+## State Reserves
+
+Each hook state key/value (local or foreign) reserves **0.2 XAH** on the hook account. That reserve is **not** part of `LOCKED`, but it still cannot leave the account until the key is deleted or the namespace is revoked.
+
+Anyone installing this hook must keep extra XAH on the account so:
+
+- Base account reserve is covered.
+- Every campaign and user state key is covered (0.2 XAH each).
+- The locked paid pool can still be refunded or withdrawn. If the spendable balance is eaten by owner-count reserve, refund emits and unlock withdrawals can fail.
+
+### Per-user cost
+
+| Phase | Keys | Reserve |
+|-------|------|---------|
+| Active order | `TS`, `AMT`, `QTY` | 0.6 XAH per payer |
+| After refund | `RFND` (order keys deleted) | 0.2 XAH per payer |
+| After namespace revoke | none | 0 XAH |
+
+Local campaign keys (`PRICE`, `MINQ`, `DURA`, `START`, `END`, `LOCKED`, `ORDQ`, `RCNT`, `STAT`) also reserve 0.2 XAH each.
+
+**Example:** 50 unique payers during an open campaign ≈ 50 × 0.6 XAH = **30 XAH** user-namespace reserve, plus local keys, plus `LOCKED`, plus the account base reserve. Fund the hook account above that total before going live.
+
+### Reclaiming reserve after the campaign
+
+When the campaign is finished (successful unlock, or all refunds processed), **revoke user namespaces** to delete leftover foreign state and return the 0.2 XAH per key to the hook account. Do this only after refunds are complete so order records are no longer required.
+
 ## Installation
 
 Triggers: **Payment** and **Invoke**. Allow emitted **Payment** transactions.
