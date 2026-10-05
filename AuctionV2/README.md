@@ -1,129 +1,134 @@
 # Handy Hooks ~ Auction House
 
-**Handy Hooks** — Auction House hook set (public **V2**; first published release).
+**Handy Hooks** Auction House (public **V2**) is a four-hook set for running URIToken auctions on a single Xahau host account.
 
-Four Xahau hooks that run a URIToken auction on one host account. They share one **HookNamespace** so seller subscription, auction state, FEE/TREASURY, and LCK lock accounting stay consistent.
+Sellers subscribe, list a token into hook custody, accept bids (XAH or IOU), and settle through one shared **HookNamespace**. The host never needs to sign settlement — Finalise does it on-chain from hook state.
 
-| Hook | Dir | HookOn (recommended) | Install params | Wasm bytes | HookHash (sha512Half) |
-|------|-----|----------------------|----------------|------------|------------------------|
-| Subscription | `Subscription/` | Payment + Invoke | `ADMIN` (20), not the baked default | 9149 | `6F6FD261881A285C9B038B46025809BBC7217E8EE904B914C2ED89EACBDCA68A` |
-| Create | `Create/` | Payment + Remit + Invoke | none | 12274 | `D1D4BFCA240733EF3E00AB04E74481697D2C67C552A2994911732CC822869342` |
-| Bids | `Bids/` | Payment + Remit + Invoke | `ADMIN` (20) only for the CLR clear | 18399 | `8E5085A30AADFA0554A237442782299AEBDD03BCEF83B27CBBDCB55201F9497A` |
-| Finalise | `Finalise/` | Invoke | `ADMIN` (20), not the baked default | 25813 | `5D1651156BC4348C8F0CF683AB22698AE7CFD556E1A13F10AA986A5A17619E2A` |
+---
 
-Canonical sources live under each hook directory (`.c` + `.wasm` + integration tests). Subscription is the only Sub source — do not keep root `AuctionSub.*` copies.
+## How the auction chain works
 
-## Install order
+```
+Subscribe  →  Create  →  Bid  →  Finalise
+   Sub          Create      Bids     Finalise
+```
 
-1. **Subscription** (override `ADMIN` to your operator account, then admin Invokes for SUBPRICE / SUBPERIOD / SUBSPLIT / AUCCAP / TREASURY / FEE)
-2. **Create**
-3. **Bids** (pass the same `ADMIN` only if you want the CLR clear on this hook)
-4. **Finalise** (same `ADMIN` AccountID as Sub)
+1. **Subscribe** — A seller pays a subscription fee to the host. That opens a time window and an auction cap. An admin configures price, period, treasury split, and fee settings on the Subscription hook.
+2. **Create** — The seller Remits exactly one non-burnable URIToken to the host with auction parameters (duration, optional start price, min increment, buy-now, currency). The Create hook takes custody of the lot and opens the auction.
+3. **Bid** — Bidders pay the host with the auction id. Higher bids refund the previous high bidder. A buy-now bid can end the auction immediately and hand the token to the winner.
+4. **Finalise** — After expiry (or after buy-now), anyone allowed — seller, winner, or admin — Invokes Finalise with the auction id. The hook delivers the URIToken, pays the seller and treasury, and clears auction state.
 
-All four must use the **same HookNamespace**.
+All four hooks must share the **same HookNamespace** so subscription, auction records, fees, and locked bid funds stay consistent.
 
-### ADMIN override (required)
+---
 
-Install ADMIN must not be the baked default. If the install param is still that account, the hook returns `baked ADMIN refused`. A different 20-byte AccountID still works, and it must not be the host.
+## The four hooks
 
-Baked accounts:
+| Hook | Role | Directory | Wasm | HookHash |
+|------|------|-----------|------|----------|
+| **Subscription** | Seller access + admin config | `Subscription/` | 9149 | `6F6FD261…CBDCA68A` |
+| **Create** | Open an auction (URIToken into custody) | `Create/` | 12274 | `D1D4BFCA…22869342` |
+| **Bids** | Accept bids and outbid refunds | `Bids/` | 18399 | `8E5085A3…01F9497A` |
+| **Finalise** | Settle, cancel, or claim stranded refunds | `Finalise/` | 25813 | `5D165115…17619E2A` |
 
-- Subscription: `raMjZ7ayJ3txQY75vQWr8RTzErAcUD3gee`
-- Finalise: `r3CANwccnAMqEyYeBW3q7Gk9sMAfuYZe45`
+Full hashes (sha512Half):
 
-The Bids CLR clear checks both of those baked accounts and refuses either one.
+- Subscription: `6F6FD261881A285C9B038B46025809BBC7217E8EE904B914C2ED89EACBDCA68A`
+- Create: `D1D4BFCA240733EF3E00AB04E74481697D2C67C552A2994911732CC822869342`
+- Bids: `8E5085A30AADFA0554A237442782299AEBDD03BCEF83B27CBBDCB55201F9497A`
+- Finalise: `5D1651156BC4348C8F0CF683AB22698AE7CFD556E1A13F10AA986A5A17619E2A`
 
-## HookOn truth
+Each directory holds the hook source (`.c`), the pinned wasm, headers, and that hook’s integration tests. See the README in each folder for parameters, HookOn, and result strings.
 
-Integration tests and recommended installs use:
+---
 
-- Sub: Payment + Invoke (host Remit/Payment LCK gates are on Create/Bids)
-- Create / Bids: Payment + Remit + Invoke — Create opens on seller Remit; both also gate **gen-0 host** Payment/Remit outflows against LCK, and passthrough other tt
-- Finalise: Invoke only
+## Install (overview)
 
-Escrow, Check, PayChan, Offer, SetHook, and AccountDelete stay unhooked. HookOn does not cover them. Do not widen HookOn to gate those types.
+Install in this order, all on one host, all with the **same HookNamespace**:
 
-Do not install Create as "Remit only" or Bids as "Payment only". The host LCK spend gate will not fire.
+1. **Subscription** — set install param `ADMIN` to your operator account (not the host, not the baked default)
+2. **Create** — no install params
+3. **Bids** — optional same `ADMIN` if you want the CLR clear on this hook
+4. **Finalise** — same `ADMIN` AccountID as Subscription
 
-## Roles
+Then admin-Invoke Subscription to set `SUBPRICE`, `SUBPERIOD`, `SUBSPLIT`, `AUCCAP`, `TREASURY`, and `FEE` before sellers can subscribe.
 
-- **Subscription** — seller pays `SUB` for a time window + auction cap; admin configures prices, treasury split, and Finalise fee bps. Payment with both `SUB` and `AID` is rejected.
-- **Create** — seller Remits exactly one non-burnable URIToken to host with `DUR` (+ optional SP/MB/BN/CUR/ISS). Requires active subscription. IOU TrustSet uses `tfSetNoRipple`. Stamps current `FEE` + `TREASURY` onto the auction.
-- **Bids** — Payment to host with `AID` (32-byte auction ns). Outbid refunds prior; buy-now Remits the lot and sets `ST=2`. A stranded refund does **not** freeze later bids.
-- **Finalise** — Invoke with `AID` to settle (seller / winner / ADMIN). Seller cancel via `AID` + `CNCL=0x01` when open, no bids, and remaining time ≥ half of DUR. Stranded refund claim is pullable by the owed bidder and does not block settle/cancel.
+Recommended HookOn:
 
-## Shared admin / money keys
+| Hook | HookOn |
+|------|--------|
+| Subscription | Payment + Invoke |
+| Create | Payment + Remit + Invoke |
+| Bids | Payment + Remit + Invoke |
+| Finalise | Invoke |
 
-Written by Subscription admin Invokes; snapshotted by Create onto each auction; Finalise prefers the auction stamp:
+Create and Bids also gate host outflows against locked bid principal (LCK). Do not install Create as Remit-only or Bids as Payment-only — that gate will not run. Escrow, Check, PayChan, Offer, SetHook, and AccountDelete stay unhooked by design.
 
-- `FEE` — uint16 BE basis points of HIGH, 0..5000
-- `TREASURY` — 20-byte account (must not be host)
-- Missing FEE or TREASURY at create → 100% to seller; `FEE=0` stamp → no treasury emit
-- Changing live FEE/TREASURY after Create does **not** retax an open listing
+---
 
-## LCK (high level)
+## Fees and treasury
 
-Host-local lock of accepted bid principal:
+Admin sets host-level `FEE` (basis points of the winning bid, max 50%) and `TREASURY` on the Subscription hook.
 
-- XAH: key `LCK` (8 BE drops)
-- IOU: key `sha512Half(CUR||ISS)`, value XFL bits
+Create **stamps** the current fee and treasury onto each new auction. Finalise uses that stamp, so changing live settings later does not retax an open listing. If fee or treasury is missing at create time, the seller receives 100%. A stamped `FEE` of 0 means no treasury cut.
 
-Bids add principal on accept and subtract the prior seat only on refund **cbak success** (or Finalise stranded-claim cbak). Finalise subtracts HIGH when paying out a won auction. Fail-closed on under/overflow; forensic `LCKU` / `SSF` strands need seller or ADMIN ack before further settle.
+Subscription payments can also split a share to treasury via `SUBSPLIT`.
 
-LCK stays face value. It does not count emit fees, destination-hook fees, or Remit reserves. Extra XAH float remains the rule.
+---
 
-A host gen-0 Remit may carry at most 3 Amounts. More than 3 returns `too many Remit amounts`. Each IOU entry is refused while that IOU has LCK above zero (`Insufficient spendable float`).
+## Seller cancel
 
-The host Payment gate on Create and Bids checks SendMax as well as Amount. The lock check uses the larger of the two when SendMax is XAH drops. If SendMax is present and is not XAH drops, the hook returns `SendMax not drops`. If SendMax is absent, the Amount check stays.
+While an auction is open, has **no bids**, and at least half of its duration remains, the seller may Invoke Finalise with `AID` and `CNCL` to reclaim the URIToken. Cancel does not change LCK. A stranded outbid refund does not block cancel.
 
-## Seller cancel (CNCL)
-
-Finalise Invoke with `AID` + `CNCL` (1 byte `0x01`): seller only; auction open (`ST=1`); no bids; remaining time ≥ `DUR/2`. Returns URIToken to seller; no LCK change. Blocked while PEN/LCKU/SSF/TSF/BNW or in-flight settle. A stranded outbid refund does **not** block cancel.
+---
 
 ## Operator notes
 
 These match the wasm on disk. They are install and runtime rules, not open gaps.
 
-- Install **ADMIN** must not be the baked default (`baked ADMIN refused`). Subscription baked: `raMjZ7ayJ3txQY75vQWr8RTzErAcUD3gee`. Finalise baked: `r3CANwccnAMqEyYeBW3q7Gk9sMAfuYZe45`.
-- Host Payment gate checks **SendMax** as well as Amount (`SendMax not drops` when SendMax is present and not XAH drops).
-- **Create** refuses non-zero TransferRate, global freeze, clawback, and an existing issuer-side freeze on the host line.
-- ADMIN **CLR** clears stuck PEN/SPEN while the hook is still installed. Drain in-flight emits before SetHook is still operator hygiene.
-- A failed strand write leaves PEN set; a successful refund still clears PEN so later bids are not frozen.
-- Extra **XAH float** remains the fee/reserve rule. LCK is face-value principal only.
-- Escrow, Check, PayChan, Offer, SetHook, and AccountDelete stay **unhooked**.
-- Host gen-0 Remit: at most **3 Amounts** (`too many Remit amounts` above that).
-- Bad IOU LCK float on bid: `IOU amount invalid`. Buy-now URI-fail Finalise retry: seller, Sub ADMIN, or **WIN**.
+- Install **ADMIN** must not be the baked default (`baked ADMIN refused`). Details are in the Subscription and Finalise READMEs.
+- Bid principal is locked on the host as **LCK** (XAH or per-IOU). Keep extra XAH float for emit fees and Remit reserves — LCK is face-value principal only.
+- Host Payment checks **SendMax** as well as Amount when present.
+- **Create** refuses non-zero TransferRate, global freeze, clawback, and an existing issuer-side freeze on the host IOU line.
+- Host gen-0 Remit allows at most **3** Amounts.
+- A stranded outbid refund does **not** freeze later bids; the owed bidder can claim it through Finalise.
+- Buy-now URI-fail Finalise retry: seller, Sub ADMIN, or winner.
+
+---
 
 ## Acknowledgements
 
 Thanks to **KVT** for the assessments that shaped this release. Findings from that review are closed in this pack.
 
+---
+
 ## Integration tests
 
-Live **testnet** integration tests (NetworkID 21338 / `xahau-test.net`). They install the hooks, send real txs, and assert DONE/NOPE and ledger state. They are the formal test layer for this release. They are **not** unit tests and they do **not** prove a mainnet install.
+Live **testnet** integration tests (NetworkID 21338 / `xahau-test.net`) install the hooks, send real transactions, and assert results and ledger state. They are the formal test layer for this release. They are not unit tests and they do not prove a mainnet install.
 
-Use **xahau.js** only (`Client`, `Wallet`, `decodeAccountID`). Node 18+.
+Requires Node 18+ and **xahau.js** only.
 
 ```bash
 npm install
-npm run it:combined   # publishable one-host testnet path (ships TESTNET_PATH.md)
+npm run it:combined   # one-host publishable path → TESTNET_PATH.md
 npm run it            # full per-hook matrices
 ```
 
-Same runners without npm scripts:
+Or without npm scripts:
 
 ```bash
 node IT_COMBINED.js
 node IT_ALL.js
 ```
 
-Per hook: `npm run it:sub` / `it:create` / `it:bids` / `it:finalise`, or the matching `*/IT_*.js` files.
+Per hook: `npm run it:sub` / `it:create` / `it:bids` / `it:finalise`.
 
-**Publish proof:** `TESTNET_PATH.md` + `IT_COMBINED.json` (NetworkID 21338, host, HookHashes, tx hashes).
+**Publish proof:** `TESTNET_PATH.md` + `IT_COMBINED.json`  
+**Build verification:** `BUILD_VERIFICATION.md` (byte-for-byte rebuild of all four pins, lint, and test totals)
 
-**Build verification:** see `BUILD_VERIFICATION.md` for the byte-for-byte rebuild of all four pins, xahc lint results, the hook-repro result, and the test totals.
+`package.json` pins `xahau`. `node_modules`, build logs, and per-hook integration JSON stay out of the publish zip (see `.gitignore`).
 
-`package.json` pins `xahau`. `node_modules`, build logs, and per-hook integration JSON stay out of the publish zip (see `.gitignore`). Ship `TESTNET_PATH.md` + combined JSON only. Matrix JSON / run logs also live under `_local_artifacts/` on the build machine.
+---
 
 ## Layout
 
