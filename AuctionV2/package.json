@@ -1,0 +1,21 @@
+{
+  "name": "handyhooks-auction-house",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Handy Hooks ~ Auction House V2 integration tests (xahau.js)",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "it": "node IT_ALL.js",
+    "it:combined": "node IT_COMBINED.js",
+    "it:sub": "node Subscription/IT_SUB.js",
+    "it:create": "node Create/IT_CREATE.js",
+    "it:bids": "node Bids/IT_BIDS.js",
+    "it:finalise": "node Finalise/IT_FINALISE.js"
+  },
+  "dependencies": {
+    "xahau": "^4.1.1"
+  }
+}

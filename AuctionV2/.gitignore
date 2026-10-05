@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+
+# Local integration / build scratch (not shippable)
+_local_artifacts/
+*.build.log
+*.run.log
+*.pins.log
+*.rerun.log
+*.exit
+*.log
+
+# Per-hook integration result dumps (keep root IT_COMBINED.json)
+Create/IT_CREATE.json
+Bids/IT_BIDS.json
+Finalise/IT_FINALISE.json
+Subscription/IT_SUB.json
+IT_ALL.json
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# OS / editor
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.swp
+*~
+.vscode/
+.idea/
+
+# XRPLWin ABI / domain-hosted definitions (served separately, not shipped in pack)
+abi/

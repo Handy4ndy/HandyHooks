@@ -1,0 +1,843 @@
+{
+  "when": "2026-10-05T10:05:47.202Z",
+  "networkId": 21338,
+  "ws": "wss://xahau-test.net",
+  "branding": "Handy Hooks ~ Auction House V2",
+  "namespace": "AEFFD4B07F38CDD57C54228343FDFB59412C3F3E5B9627815D8B5169506DF51D",
+  "wasm": {
+    "Sub": {
+      "bytes": 9149,
+      "hash": "6F6FD261881A285C9B038B46025809BBC7217E8EE904B914C2ED89EACBDCA68A"
+    },
+    "Create": {
+      "bytes": 12274,
+      "hash": "D1D4BFCA240733EF3E00AB04E74481697D2C67C552A2994911732CC822869342"
+    },
+    "Bids": {
+      "bytes": 18399,
+      "hash": "8E5085A30AADFA0554A237442782299AEBDD03BCEF83B27CBBDCB55201F9497A"
+    },
+    "Finalise": {
+      "bytes": 25813,
+      "hash": "5D1651156BC4348C8F0CF683AB22698AE7CFD556E1A13F10AA986A5A17619E2A"
+    }
+  },
+  "accounts": {
+    "host": "rvJQByWCa2oQsSbpu3DxfUuGYA3xusaZy",
+    "admin": "rwZbvPK4N7ySMyD9oFpSUkxucZNWn2EoEq",
+    "seller": "rfjCU6ZYSUBjaZSCPSsEwoFVdVNgYKenKt",
+    "bidderA": "r3xBp5YXRBQH2iP86crYDscmRwKyEswx2s",
+    "bidderB": "rp8ww5krY7hDDRXz4pFqwUA6FCK14DN1aA",
+    "bidderC": "rp24iVjtpQ7Fnif9BFFGYRcvc9uHpTZGZM",
+    "treasury": "rHzrMYwfcCjPfSS5QM7H5ajZ4KNHLM2ccx",
+    "bank": "rfjmXqStPPX6LG1sr5KaCW8jowsPKJaCDD"
+  },
+  "txs": {
+    "setHook": "62BC897DC52680AFC1A1755894064E8EB12551309EF190075A24E9FDF4576D8F",
+    "admin_SUBPRICE": "C2063D4E379250DBA6E4FA68FE3D43EC83CB5A6AAB28A7C38986E2F403647BF7",
+    "admin_SUBPERIOD": "940FCF08F7872322215DD933A6278E915FD19D6F780E50F1BC0630ED4AB75D5D",
+    "admin_SUBSPLIT": "433867111544E84D127DD9EA9A3CA2BF295B1572B94B56EE597B42737E9E5A59",
+    "admin_AUCCAP": "9F3BAC4ECA32AEA507590699784AD24208C2860195DD6571399BC7F5DEB89E22",
+    "admin_TREASURY": "4ACFEBF28CC886D90AA1CF0632CBC15FF26754F403B1FB8F509ABD74E96BD038",
+    "admin_FEE": "9FD761DAC86BDCA7AD3B01D89F3C29972650AB8F8CBCCD3056132180DC900AB1",
+    "sellerSub": "BAFBAB9BFF31D86D09E0DC9FD279D26939DB5756D09E59CD8D014D2DC05A8429",
+    "subAidReject": "879EEA83433ADA19B2459C1DFEC16DFFC1E5513B8135C9B7B74C27F54F30A373",
+    "bnMint": "AF1BBAB992585306A1309B8D528FE748A2ACA24CA282D2E337B6B17D94C24691",
+    "bnCreate": "05DA049198F90D828853EE197F865409F2DD81DA15C13F61EDE062137D88081B",
+    "bnAid": "40C05B502262A573F38AF4BC9EA9A4D93CFF6C11724DEC4B54FB46901999BD15",
+    "bnBuyNow": "10A06876FD19866891473BF4E75E2B918C8AA474C69FA33F60A6744EC2DDA328",
+    "bnFinalise": "6A458A2CB3E121B506B6B05F73C004597783FA167F055A378460EA76349A5F49",
+    "strandCreate": "2376542325EA51F6B737015056F6DCC5574F73E25FD9B9F0A0881CEBCFB4DF70",
+    "strandBidA": "1CEE6420262F1E9523A382275B7736009BAE95218C49BF848FCCAA43DB48E320",
+    "strandDepositAuth": "080DBA1550D095CFF1EC95831F0CF497EDA59017F2260706F81FB4A9EBE16368",
+    "strandBidB": "9A36C0FE1636FA4FF0B43322E648C52A0F99F74C160E235D488866B7C46B8937",
+    "strandBidC": "8360BD76D6D7F65A1435177485DB8B192E615CBA69F15309AE639EE306481188",
+    "strandClearDepositAuth": "56244171D687F5DF9BB0F52215105D6ACA42C61C011A55598DDDC14D820D4A89",
+    "strandClaim": "8FF379A4D7412F15E508FFF5CFD085E537B4B6750C19F6082B83D9F7DBC0FE55",
+    "strandBuyNow": "1D8E9E84A8330D9C57006F3FC480BBF9909DFE4511A19864C4D96A9C25866F56",
+    "strandFinalise": "5FDB2C5B0119026F43626197EFB0298370793C1B721A5E388B1361E4B6DD92AD",
+    "cancelCreate": "EB5F205321BEEDE0D4477D210FBC1FDF09E7D59C85AD774090873A1B2FD44D59",
+    "cancelInvoke": "918E582EEB1FAAE05987207728A77D78B17630E9C463921EE505719EF9235B4A"
+  },
+  "cases": [
+    {
+      "name": "onehost_sethook",
+      "pass": true,
+      "engine": "tesSUCCESS",
+      "hash": "62BC897DC52680AFC1A1755894064E8EB12551309EF190075A24E9FDF4576D8F",
+      "gotMsg": "",
+      "want": {
+        "engine": "tesSUCCESS"
+      },
+      "hrs": []
+    },
+    {
+      "name": "onehost_admin_SUBPRICE",
+      "pass": true,
+      "engine": "tesSUCCESS",
+      "hash": "C2063D4E379250DBA6E4FA68FE3D43EC83CB5A6AAB28A7C38986E2F403647BF7",
+      "gotMsg": "SUBPRICE updated | Passthrough | Passthrough | Invoke passthrough",
+      "want": {
+        "engine": "tesSUCCESS"
+      },
+      "hrs": [
+        {
+          "result": 3,
+          "code": "182",
+          "msg": "SUBPRICE updated",
+          "emit": 0,
+          "hash": "6F6FD261881A285C9B038B46025809BBC7217E8EE904B914C2ED89EACBDCA68A"
+        },
+        {
+          "result": 3,
+          "code": "26a",
+          "msg": "Passthrough",
+          "emit": 0,
+          "hash": "D1D4BFCA240733EF3E00AB04E74481697D2C67C552A2994911732CC822869342"
+        },
+        {
+          "result": 3,
+          "code": "34f",
+          "msg": "Passthrough",
+          "emit": 0,
+          "hash": "8E5085A30AADFA0554A237442782299AEBDD03BCEF83B27CBBDCB55201F9497A"
+        },
+        {
+          "result": 3,
+          "code": "35f",
+          "msg": "Invoke passthrough",
+          "emit": 0,
+          "hash": "5D1651156BC4348C8F0CF683AB22698AE7CFD556E1A13F10AA986A5A17619E2A"
+        }
+      ]
+    },
+    {
+      "name": "onehost_admin_SUBPERIOD",
+      "pass": true,
+      "engine": "tesSUCCESS",
+      "hash": "940FCF08F7872322215DD933A6278E915FD19D6F780E50F1BC0630ED4AB75D5D",
+      "gotMsg": "SUBPERIOD updated | Passthrough | Passthrough | Invoke passthrough",
+      "want": {
+        "engine": "tesSUCCESS"
+      },
+      "hrs": [
+        {
+          "result": 3,
+          "code": "18e",
+          "msg": "SUBPERIOD updated",
+          "emit": 0,
+          "hash": "6F6FD261881A285C9B038B46025809BBC7217E8EE904B914C2ED89EACBDCA68A"
+        },
+        {
+          "result": 3,
+          "code": "26a",
+          "msg": "Passthrough",
+          "emit": 0,
+          "hash": "D1D4BFCA240733EF3E00AB04E74481697D2C67C552A2994911732CC822869342"
+        },
+        {
+          "result": 3,
+          "code": "34f",
+          "msg": "Passthrough",
+          "emit": 0,
+          "hash": "8E5085A30AADFA0554A237442782299AEBDD03BCEF83B27CBBDCB55201F9497A"
+        },
+        {
+          "result": 3,
+          "code": "35f",
+          "msg": "Invoke passthrough",
+          "emit": 0,
+          "hash": "5D1651156BC4348C8F0CF683AB22698AE7CFD556E1A13F10AA986A5A17619E2A"
+        }
+      ]
+    },
+    {
+      "name": "onehost_admin_SUBSPLIT",
+      "pass": true,
+      "engine": "tesSUCCESS",
+      "hash": "433867111544E84D127DD9EA9A3CA2BF295B1572B94B56EE597B42737E9E5A59",
+      "gotMsg": "SUBSPLIT updated | Passthrough | Passthrough | Invoke passthrough",
+      "want": {
+        "engine": "tesSUCCESS"
+      },
+      "hrs": [
+        {
+          "result": 3,
+          "code": "19a",
+          "msg": "SUBSPLIT updated",
+          "emit": 0,
+          "hash": "6F6FD261881A285C9B038B46025809BBC7217E8EE904B914C2ED89EACBDCA68A"
+        },
+        {
+          "result": 3,
+          "code": "26a",
+          "msg": "Passthrough",
+          "emit": 0,
+          "hash": "D1D4BFCA240733EF3E00AB04E74481697D2C67C552A2994911732CC822869342"
+        },
+        {
+          "result": 3,
+          "code": "34f",
+          "msg": "Passthrough",
+          "emit": 0,
+          "hash": "8E5085A30AADFA0554A237442782299AEBDD03BCEF83B27CBBDCB55201F9497A"
+        },
+        {
+          "result": 3,
+          "code": "35f",
+          "msg": "Invoke passthrough",
+          "emit": 0,
+          "hash": "5D1651156BC4348C8F0CF683AB22698AE7CFD556E1A13F10AA986A5A17619E2A"
+        }
+      ]
+    },
+    {
+      "name": "onehost_admin_AUCCAP",
+      "pass": true,
+      "engine": "tesSUCCESS",
+      "hash": "9F3BAC4ECA32AEA507590699784AD24208C2860195DD6571399BC7F5DEB89E22",
+      "gotMsg": "AUCCAP updated | Passthrough | Passthrough | Invoke passthrough",
+      "want": {
+        "engine": "tesSUCCESS"
+      },
+      "hrs": [
+        {
+          "result": 3,
+          "code": "1a6",
+          "msg": "AUCCAP updated",
+          "emit": 0,
+          "hash": "6F6FD261881A285C9B038B46025809BBC7217E8EE904B914C2ED89EACBDCA68A"
+        },
+        {
+          "result": 3,
+          "code": "26a",
+          "msg": "Passthrough",
+          "emit": 0,
+          "hash": "D1D4BFCA240733EF3E00AB04E74481697D2C67C552A2994911732CC822869342"
+        },
+        {
+          "result": 3,
+          "code": "34f",
+          "msg": "Passthrough",
+          "emit": 0,
+          "hash": "8E5085A30AADFA0554A237442782299AEBDD03BCEF83B27CBBDCB55201F9497A"
+        },
+        {
+          "result": 3,
+          "code": "35f",
+          "msg": "Invoke passthrough",
+          "emit": 0,
+          "hash": "5D1651156BC4348C8F0CF683AB22698AE7CFD556E1A13F10AA986A5A17619E2A"
+        }
+      ]
+    },
+    {
+      "name": "onehost_admin_TREASURY",
+      "pass": true,
+      "engine": "tesSUCCESS",
+      "hash": "4ACFEBF28CC886D90AA1CF0632CBC15FF26754F403B1FB8F509ABD74E96BD038",
+      "gotMsg": "TREASURY updated | Passthrough | Passthrough | Invoke passthrough",
+      "want": {
+        "engine": "tesSUCCESS"
+      },
+      "hrs": [
+        {
+          "result": 3,
+          "code": "1b5",
+          "msg": "TREASURY updated",
+          "emit": 0,
+          "hash": "6F6FD261881A285C9B038B46025809BBC7217E8EE904B914C2ED89EACBDCA68A"
+        },
+        {
+          "result": 3,
+          "code": "26a",
+          "msg": "Passthrough",
+          "emit": 0,
+          "hash": "D1D4BFCA240733EF3E00AB04E74481697D2C67C552A2994911732CC822869342"
+        },
+        {
+          "result": 3,
+          "code": "34f",
+          "msg": "Passthrough",
+          "emit": 0,
+          "hash": "8E5085A30AADFA0554A237442782299AEBDD03BCEF83B27CBBDCB55201F9497A"
+        },
+        {
+          "result": 3,
+          "code": "35f",
+          "msg": "Invoke passthrough",
+          "emit": 0,
+          "hash": "5D1651156BC4348C8F0CF683AB22698AE7CFD556E1A13F10AA986A5A17619E2A"
+        }
+      ]
+    },
+    {
+      "name": "onehost_admin_FEE",
+      "pass": true,
+      "engine": "tesSUCCESS",
+      "hash": "9FD761DAC86BDCA7AD3B01D89F3C29972650AB8F8CBCCD3056132180DC900AB1",
+      "gotMsg": "FEE updated | Passthrough | Passthrough | Invoke passthrough",
+      "want": {
+        "engine": "tesSUCCESS"
+      },
+      "hrs": [
+        {
+          "result": 3,
+          "code": "1c2",
+          "msg": "FEE updated",
+          "emit": 0,
+          "hash": "6F6FD261881A285C9B038B46025809BBC7217E8EE904B914C2ED89EACBDCA68A"
+        },
+        {
+          "result": 3,
+          "code": "26a",
+          "msg": "Passthrough",
+          "emit": 0,
+          "hash": "D1D4BFCA240733EF3E00AB04E74481697D2C67C552A2994911732CC822869342"
+        },
+        {
+          "result": 3,
+          "code": "34f",
+          "msg": "Passthrough",
+          "emit": 0,
+          "hash": "8E5085A30AADFA0554A237442782299AEBDD03BCEF83B27CBBDCB55201F9497A"
+        },
+        {
+          "result": 3,
+          "code": "35f",
+          "msg": "Invoke passthrough",
+          "emit": 0,
+          "hash": "5D1651156BC4348C8F0CF683AB22698AE7CFD556E1A13F10AA986A5A17619E2A"
+        }
+      ]
+    },
+    {
+      "name": "onehost_seller_sub",
+      "pass": true,
+      "engine": "tesSUCCESS",
+      "hash": "BAFBAB9BFF31D86D09E0DC9FD279D26939DB5756D09E59CD8D014D2DC05A8429",
+      "gotMsg": "Subscription active | Passthrough | Payment passthrough",
+      "want": {
+        "engine": "tesSUCCESS",
+        "msgIncludes": "Subscription",
+        "subOnly": true
+      },
+      "hrs": [
+        {
+          "result": 3,
+          "code": "2ca",
+          "msg": "Subscription active",
+          "emit": 0,
+          "hash": "6F6FD261881A285C9B038B46025809BBC7217E8EE904B914C2ED89EACBDCA68A"
+        },
+        {
+          "result": 3,
+          "code": "26a",
+          "msg": "Passthrough",
+          "emit": 0,
+          "hash": "D1D4BFCA240733EF3E00AB04E74481697D2C67C552A2994911732CC822869342"
+        },
+        {
+          "result": 3,
+          "code": "366",
+          "msg": "Payment passthrough",
+          "emit": 0,
+          "hash": "8E5085A30AADFA0554A237442782299AEBDD03BCEF83B27CBBDCB55201F9497A"
+        }
+      ]
+    },
+    {
+      "name": "onehost_sub_aid_reject",
+      "pass": true,
+      "engine": "tecHOOK_REJECTED",
+      "hash": "879EEA83433ADA19B2459C1DFEC16DFFC1E5513B8135C9B7B74C27F54F30A373",
+      "gotMsg": "SUB and AID both set",
+      "want": {
+        "engine": "tecHOOK_REJECTED",
+        "msg": "SUB and AID both set"
+      }
+    },
+    {
+      "name": "onehost_bn_create",
+      "pass": true,
+      "engine": "tesSUCCESS",
+      "hash": "05DA049198F90D828853EE197F865409F2DD81DA15C13F61EDE062137D88081B",
+      "gotMsg": "Auction created | Passthrough",
+      "want": {
+        "engine": "tesSUCCESS",
+        "msgIncludes": "Auction created"
+      },
+      "hrs": [
+        {
+          "result": 3,
+          "code": "49c",
+          "msg": "Auction created",
+          "emit": 0,
+          "hash": "D1D4BFCA240733EF3E00AB04E74481697D2C67C552A2994911732CC822869342"
+        },
+        {
+          "result": 3,
+          "code": "352",
+          "msg": "Passthrough",
+          "emit": 0,
+          "hash": "8E5085A30AADFA0554A237442782299AEBDD03BCEF83B27CBBDCB55201F9497A"
+        }
+      ]
+    },
+    {
+      "name": "onehost_bn_fee_stamp",
+      "pass": true,
+      "engine": "ok",
+      "gotMsg": "{\"feeSnap\":500,\"FEE\":\"01F4\",\"ST\":\"01\"}",
+      "want": {
+        "FEE": 500,
+        "ST": "01"
+      }
+    },
+    {
+      "name": "onehost_bn_buynow",
+      "pass": true,
+      "engine": "tesSUCCESS",
+      "hash": "10A06876FD19866891473BF4E75E2B918C8AA474C69FA33F60A6744EC2DDA328",
+      "gotMsg": "Payment passthrough | Passthrough | Buy-now accepted",
+      "want": {
+        "engine": "tesSUCCESS",
+        "msgIncludes": "Buy-now",
+        "bidsOnly": true
+      },
+      "hrs": [
+        {
+          "result": 3,
+          "code": "249",
+          "msg": "Payment passthrough",
+          "emit": 0,
+          "hash": "6F6FD261881A285C9B038B46025809BBC7217E8EE904B914C2ED89EACBDCA68A"
+        },
+        {
+          "result": 3,
+          "code": "26a",
+          "msg": "Passthrough",
+          "emit": 0,
+          "hash": "D1D4BFCA240733EF3E00AB04E74481697D2C67C552A2994911732CC822869342"
+        },
+        {
+          "result": 3,
+          "code": "699",
+          "msg": "Buy-now accepted",
+          "emit": 1,
+          "hash": "8E5085A30AADFA0554A237442782299AEBDD03BCEF83B27CBBDCB55201F9497A"
+        }
+      ]
+    },
+    {
+      "name": "onehost_bn_uri_to_winner",
+      "pass": true,
+      "engine": "ok",
+      "gotMsg": "URI to winner",
+      "want": {
+        "owner": "r3xBp5YXRBQH2iP86crYDscmRwKyEswx2s"
+      }
+    },
+    {
+      "name": "onehost_bn_finalise",
+      "pass": true,
+      "engine": "tesSUCCESS",
+      "hash": "6A458A2CB3E121B506B6B05F73C004597783FA167F055A378460EA76349A5F49",
+      "gotMsg": "Invoke passthrough | Passthrough | Passthrough | Settlement pending",
+      "want": {
+        "engine": "tesSUCCESS",
+        "msgIncludes": "Settlement pending",
+        "finOnly": true
+      },
+      "hrs": [
+        {
+          "result": 3,
+          "code": "15d",
+          "msg": "Invoke passthrough",
+          "emit": 0,
+          "hash": "6F6FD261881A285C9B038B46025809BBC7217E8EE904B914C2ED89EACBDCA68A"
+        },
+        {
+          "result": 3,
+          "code": "26a",
+          "msg": "Passthrough",
+          "emit": 0,
+          "hash": "D1D4BFCA240733EF3E00AB04E74481697D2C67C552A2994911732CC822869342"
+        },
+        {
+          "result": 3,
+          "code": "34f",
+          "msg": "Passthrough",
+          "emit": 0,
+          "hash": "8E5085A30AADFA0554A237442782299AEBDD03BCEF83B27CBBDCB55201F9497A"
+        },
+        {
+          "result": 3,
+          "code": "9b0",
+          "msg": "Settlement pending",
+          "emit": 2,
+          "hash": "5D1651156BC4348C8F0CF683AB22698AE7CFD556E1A13F10AA986A5A17619E2A"
+        }
+      ]
+    },
+    {
+      "name": "onehost_bn_settle_asserts",
+      "pass": true,
+      "engine": "ok",
+      "gotMsg": "{\"aidCleared\":true,\"emit\":2,\"treasDelta\":\"250000\",\"sellerDelta\":\"4619603\"}",
+      "want": {
+        "cleared": true,
+        "emit": ">=2",
+        "treasury": "~250000",
+        "seller": "~4750000"
+      }
+    },
+    {
+      "name": "onehost_strand_create",
+      "pass": true,
+      "engine": "tesSUCCESS",
+      "hash": "2376542325EA51F6B737015056F6DCC5574F73E25FD9B9F0A0881CEBCFB4DF70",
+      "gotMsg": "Auction created | Passthrough",
+      "want": {
+        "engine": "tesSUCCESS",
+        "msgIncludes": "Auction created"
+      },
+      "hrs": [
+        {
+          "result": 3,
+          "code": "49c",
+          "msg": "Auction created",
+          "emit": 0,
+          "hash": "D1D4BFCA240733EF3E00AB04E74481697D2C67C552A2994911732CC822869342"
+        },
+        {
+          "result": 3,
+          "code": "352",
+          "msg": "Passthrough",
+          "emit": 0,
+          "hash": "8E5085A30AADFA0554A237442782299AEBDD03BCEF83B27CBBDCB55201F9497A"
+        }
+      ]
+    },
+    {
+      "name": "onehost_strand_bid_A",
+      "pass": true,
+      "engine": "tesSUCCESS",
+      "hash": "1CEE6420262F1E9523A382275B7736009BAE95218C49BF848FCCAA43DB48E320",
+      "gotMsg": "Payment passthrough | Passthrough | Bid accepted",
+      "want": {
+        "engine": "tesSUCCESS",
+        "msgIncludes": "Bid accepted",
+        "bidsOnly": true
+      },
+      "hrs": [
+        {
+          "result": 3,
+          "code": "249",
+          "msg": "Payment passthrough",
+          "emit": 0,
+          "hash": "6F6FD261881A285C9B038B46025809BBC7217E8EE904B914C2ED89EACBDCA68A"
+        },
+        {
+          "result": 3,
+          "code": "26a",
+          "msg": "Passthrough",
+          "emit": 0,
+          "hash": "D1D4BFCA240733EF3E00AB04E74481697D2C67C552A2994911732CC822869342"
+        },
+        {
+          "result": 3,
+          "code": "69e",
+          "msg": "Bid accepted",
+          "emit": 0,
+          "hash": "8E5085A30AADFA0554A237442782299AEBDD03BCEF83B27CBBDCB55201F9497A"
+        }
+      ]
+    },
+    {
+      "name": "onehost_strand_set_deposit_auth",
+      "pass": true,
+      "engine": "tesSUCCESS",
+      "hash": "080DBA1550D095CFF1EC95831F0CF497EDA59017F2260706F81FB4A9EBE16368",
+      "gotMsg": "",
+      "want": {
+        "engine": "tesSUCCESS"
+      },
+      "hrs": []
+    },
+    {
+      "name": "onehost_strand_bid_B_outbid",
+      "pass": true,
+      "engine": "tesSUCCESS",
+      "hash": "9A36C0FE1636FA4FF0B43322E648C52A0F99F74C160E235D488866B7C46B8937",
+      "gotMsg": "Payment passthrough | Passthrough | Bid accepted with prior refund",
+      "want": {
+        "engine": "tesSUCCESS",
+        "msgIncludes": "Bid accepted",
+        "bidsOnly": true
+      },
+      "hrs": [
+        {
+          "result": 3,
+          "code": "249",
+          "msg": "Payment passthrough",
+          "emit": 0,
+          "hash": "6F6FD261881A285C9B038B46025809BBC7217E8EE904B914C2ED89EACBDCA68A"
+        },
+        {
+          "result": 3,
+          "code": "26a",
+          "msg": "Passthrough",
+          "emit": 0,
+          "hash": "D1D4BFCA240733EF3E00AB04E74481697D2C67C552A2994911732CC822869342"
+        },
+        {
+          "result": 3,
+          "code": "69d",
+          "msg": "Bid accepted with prior refund",
+          "emit": 1,
+          "hash": "8E5085A30AADFA0554A237442782299AEBDD03BCEF83B27CBBDCB55201F9497A"
+        }
+      ]
+    },
+    {
+      "name": "onehost_strand_state_after_outbid",
+      "pass": true,
+      "engine": "ok",
+      "gotMsg": "{\"ST\":\"01\",\"HIGH\":\"00000000002625A0\",\"RFD\":\"000000000016E360\",\"RFDA\":\"573821734DC4BB7237C5DF5BBFF172D681126167\",\"PEN\":null,\"WIN\":\"13827F2CAA5EE1BA1BA3F8D3597EC22DC4E8F2F8\"}",
+      "want": {
+        "ST": "01",
+        "note": "auction still open; RFD may appear after refund cbak fail"
+      }
+    },
+    {
+      "name": "onehost_strand_bid_C_not_blocked",
+      "pass": true,
+      "engine": "tesSUCCESS",
+      "hash": "8360BD76D6D7F65A1435177485DB8B192E615CBA69F15309AE639EE306481188",
+      "gotMsg": "{\"msgs\":[\"Bid accepted with prior refund\"],\"preRFD\":\"000000000016E360\",\"prePEN\":null}",
+      "want": {
+        "engine": "tesSUCCESS",
+        "msg": "Bid accepted",
+        "not": "stranded refund claim first"
+      }
+    },
+    {
+      "name": "onehost_strand_clear_deposit_auth",
+      "pass": true,
+      "engine": "tesSUCCESS",
+      "hash": "56244171D687F5DF9BB0F52215105D6ACA42C61C011A55598DDDC14D820D4A89",
+      "gotMsg": "",
+      "want": {
+        "engine": "tesSUCCESS"
+      },
+      "hrs": []
+    },
+    {
+      "name": "onehost_strand_claim_or_noop",
+      "pass": true,
+      "engine": "tesSUCCESS",
+      "hash": "8FF379A4D7412F15E508FFF5CFD085E537B4B6750C19F6082B83D9F7DBC0FE55",
+      "gotMsg": "Invoke passthrough | Passthrough | Passthrough | Stranded refund claimed",
+      "want": {
+        "note": "claim if stranded; reject/settle otherwise OK"
+      }
+    },
+    {
+      "name": "onehost_strand_close_buynow",
+      "pass": true,
+      "engine": "tesSUCCESS",
+      "hash": "1D8E9E84A8330D9C57006F3FC480BBF9909DFE4511A19864C4D96A9C25866F56",
+      "gotMsg": "Payment passthrough | Passthrough | Buy-now accepted with prior refund",
+      "want": {
+        "engine": "tesSUCCESS",
+        "msgIncludes": "Buy-now",
+        "bidsOnly": true
+      },
+      "hrs": [
+        {
+          "result": 3,
+          "code": "249",
+          "msg": "Payment passthrough",
+          "emit": 0,
+          "hash": "6F6FD261881A285C9B038B46025809BBC7217E8EE904B914C2ED89EACBDCA68A"
+        },
+        {
+          "result": 3,
+          "code": "26a",
+          "msg": "Passthrough",
+          "emit": 0,
+          "hash": "D1D4BFCA240733EF3E00AB04E74481697D2C67C552A2994911732CC822869342"
+        },
+        {
+          "result": 3,
+          "code": "698",
+          "msg": "Buy-now accepted with prior refund",
+          "emit": 2,
+          "hash": "8E5085A30AADFA0554A237442782299AEBDD03BCEF83B27CBBDCB55201F9497A"
+        }
+      ]
+    },
+    {
+      "name": "onehost_strand_close_finalise",
+      "pass": true,
+      "engine": "tesSUCCESS",
+      "hash": "5FDB2C5B0119026F43626197EFB0298370793C1B721A5E388B1361E4B6DD92AD",
+      "gotMsg": "Invoke passthrough | Passthrough | Passthrough | Settlement pending",
+      "want": {
+        "engine": "tesSUCCESS",
+        "msgIncludes": "Settlement pending",
+        "finOnly": true
+      },
+      "hrs": [
+        {
+          "result": 3,
+          "code": "15d",
+          "msg": "Invoke passthrough",
+          "emit": 0,
+          "hash": "6F6FD261881A285C9B038B46025809BBC7217E8EE904B914C2ED89EACBDCA68A"
+        },
+        {
+          "result": 3,
+          "code": "26a",
+          "msg": "Passthrough",
+          "emit": 0,
+          "hash": "D1D4BFCA240733EF3E00AB04E74481697D2C67C552A2994911732CC822869342"
+        },
+        {
+          "result": 3,
+          "code": "34f",
+          "msg": "Passthrough",
+          "emit": 0,
+          "hash": "8E5085A30AADFA0554A237442782299AEBDD03BCEF83B27CBBDCB55201F9497A"
+        },
+        {
+          "result": 3,
+          "code": "9b0",
+          "msg": "Settlement pending",
+          "emit": 2,
+          "hash": "5D1651156BC4348C8F0CF683AB22698AE7CFD556E1A13F10AA986A5A17619E2A"
+        }
+      ]
+    },
+    {
+      "name": "onehost_strand_aid_cleared",
+      "pass": true,
+      "engine": "ok",
+      "gotMsg": "{\"aidCleared\":true}",
+      "want": {
+        "cleared": true
+      }
+    },
+    {
+      "name": "onehost_cancel_create",
+      "pass": true,
+      "engine": "tesSUCCESS",
+      "hash": "EB5F205321BEEDE0D4477D210FBC1FDF09E7D59C85AD774090873A1B2FD44D59",
+      "gotMsg": "Auction created | Passthrough",
+      "want": {
+        "engine": "tesSUCCESS",
+        "msgIncludes": "Auction created"
+      },
+      "hrs": [
+        {
+          "result": 3,
+          "code": "49c",
+          "msg": "Auction created",
+          "emit": 0,
+          "hash": "D1D4BFCA240733EF3E00AB04E74481697D2C67C552A2994911732CC822869342"
+        },
+        {
+          "result": 3,
+          "code": "352",
+          "msg": "Passthrough",
+          "emit": 0,
+          "hash": "8E5085A30AADFA0554A237442782299AEBDD03BCEF83B27CBBDCB55201F9497A"
+        }
+      ]
+    },
+    {
+      "name": "onehost_cancel_ok",
+      "pass": true,
+      "engine": "tesSUCCESS",
+      "hash": "918E582EEB1FAAE05987207728A77D78B17630E9C463921EE505719EF9235B4A",
+      "gotMsg": "Invoke passthrough | Passthrough | Passthrough | Cancel pending",
+      "want": {
+        "engine": "tesSUCCESS",
+        "msgIncludes": "Cancel pending",
+        "finOnly": true
+      },
+      "hrs": [
+        {
+          "result": 3,
+          "code": "15d",
+          "msg": "Invoke passthrough",
+          "emit": 0,
+          "hash": "6F6FD261881A285C9B038B46025809BBC7217E8EE904B914C2ED89EACBDCA68A"
+        },
+        {
+          "result": 3,
+          "code": "26a",
+          "msg": "Passthrough",
+          "emit": 0,
+          "hash": "D1D4BFCA240733EF3E00AB04E74481697D2C67C552A2994911732CC822869342"
+        },
+        {
+          "result": 3,
+          "code": "34f",
+          "msg": "Passthrough",
+          "emit": 0,
+          "hash": "8E5085A30AADFA0554A237442782299AEBDD03BCEF83B27CBBDCB55201F9497A"
+        },
+        {
+          "result": 3,
+          "code": "474",
+          "msg": "Cancel pending",
+          "emit": 1,
+          "hash": "5D1651156BC4348C8F0CF683AB22698AE7CFD556E1A13F10AA986A5A17619E2A"
+        }
+      ]
+    },
+    {
+      "name": "onehost_cancel_asserts",
+      "pass": true,
+      "engine": "ok",
+      "gotMsg": "{\"aidCleared\":true,\"uriBack\":true}",
+      "want": {
+        "cleared": true,
+        "owner": "rfjCU6ZYSUBjaZSCPSsEwoFVdVNgYKenKt"
+      }
+    },
+    {
+      "name": "onehost_host_lck_readable",
+      "pass": true,
+      "engine": "ok",
+      "gotMsg": "{\"LCK\":\"0\",\"TAC\":\"00000003\",\"TBD\":\"00000003\",\"TBN\":\"00000002\",\"FEE\":\"01F4\"}",
+      "want": {
+        "note": "LCK may hold stranded principal until claimed; TAC bumped"
+      }
+    }
+  ],
+  "pass": 30,
+  "fail": 0,
+  "hostState": {
+    "TAC": "00000003",
+    "TBD": "00000003",
+    "FEE": "01F4",
+    "TBN": "00000002"
+  },
+  "finished": "2026-10-05T10:09:39.574Z",
+  "summary": {
+    "pass": 30,
+    "fail": 0,
+    "host": "rvJQByWCa2oQsSbpu3DxfUuGYA3xusaZy",
+    "networkId": 21338,
+    "namespace": "AEFFD4B07F38CDD57C54228343FDFB59412C3F3E5B9627815D8B5169506DF51D",
+    "hookHashes": {
+      "Sub": "6F6FD261881A285C9B038B46025809BBC7217E8EE904B914C2ED89EACBDCA68A",
+      "Create": "D1D4BFCA240733EF3E00AB04E74481697D2C67C552A2994911732CC822869342",
+      "Bids": "8E5085A30AADFA0554A237442782299AEBDD03BCEF83B27CBBDCB55201F9497A",
+      "Finalise": "5D1651156BC4348C8F0CF683AB22698AE7CFD556E1A13F10AA986A5A17619E2A"
+    }
+  }
+}

@@ -1,0 +1,55 @@
+# Auction House V2 — testnet path (one host)
+
+**Handy Hooks ~ Auction House** public V2. NetworkID **21338** (`xahau-test.net`).
+
+Generated: 2026-10-05T10:09:39.574Z
+
+## Host
+
+| Field | Value |
+|-------|-------|
+| Host account | `rvJQByWCa2oQsSbpu3DxfUuGYA3xusaZy` |
+| HookNamespace | `AEFFD4B07F38CDD57C54228343FDFB59412C3F3E5B9627815D8B5169506DF51D` |
+| ADMIN (override) | `rwZbvPK4N7ySMyD9oFpSUkxucZNWn2EoEq` |
+| Treasury | `rHzrMYwfcCjPfSS5QM7H5ajZ4KNHLM2ccx` |
+| Seller | `rfjCU6ZYSUBjaZSCPSsEwoFVdVNgYKenKt` |
+
+## Wasm pins (sha512Half)
+
+| Hook | Bytes | HookHash |
+|------|------:|----------|
+| Subscription | 9149 | `6F6FD261881A285C9B038B46025809BBC7217E8EE904B914C2ED89EACBDCA68A` |
+| Create | 12274 | `D1D4BFCA240733EF3E00AB04E74481697D2C67C552A2994911732CC822869342` |
+| Bids | 18399 | `8E5085A30AADFA0554A237442782299AEBDD03BCEF83B27CBBDCB55201F9497A` |
+| Finalise | 25813 | `5D1651156BC4348C8F0CF683AB22698AE7CFD556E1A13F10AA986A5A17619E2A` |
+
+## Key transactions
+
+| Step | Hash |
+|------|------|
+| SetHook (all four) | `62BC897DC52680AFC1A1755894064E8EB12551309EF190075A24E9FDF4576D8F` |
+| Seller SUB | `BAFBAB9BFF31D86D09E0DC9FD279D26939DB5756D09E59CD8D014D2DC05A8429` |
+| SUB+AID reject | `879EEA83433ADA19B2459C1DFEC16DFFC1E5513B8135C9B7B74C27F54F30A373` |
+| Buy-now Create | `05DA049198F90D828853EE197F865409F2DD81DA15C13F61EDE062137D88081B` |
+| Buy-now Payment | `10A06876FD19866891473BF4E75E2B918C8AA474C69FA33F60A6744EC2DDA328` |
+| Buy-now Finalise | `6A458A2CB3E121B506B6B05F73C004597783FA167F055A378460EA76349A5F49` |
+| Strand Create | `2376542325EA51F6B737015056F6DCC5574F73E25FD9B9F0A0881CEBCFB4DF70` |
+| Strand bid A / B / C | `1CEE6420262F1E9523A382275B7736009BAE95218C49BF848FCCAA43DB48E320` / `9A36C0FE1636FA4FF0B43322E648C52A0F99F74C160E235D488866B7C46B8937` / `8360BD76D6D7F65A1435177485DB8B192E615CBA69F15309AE639EE306481188` |
+| Seller cancel | `918E582EEB1FAAE05987207728A77D78B17630E9C463921EE505719EF9235B4A` |
+
+## Results
+
+- **PASS:** 30
+- **FAIL:** 0
+
+Full machine-readable log: `IT_COMBINED.json`.
+
+## What this proves
+
+1. One fresh host installs Sub+Create+Bids+Finalise with **ADMIN override** and shared namespace.
+2. Seller subscribes, Creates a URIToken auction, buy-now settles, Finalise pays seller+treasury, AID clears.
+3. Payment with both `SUB` and `AID` is rejected.
+4. After a forced stranded outbid refund (DepositAuth), a **later bid is still accepted** (not frozen).
+5. Seller cancel (`CNCL`) returns the lot when open with no bids.
+
+Re-run: `node IT_COMBINED.js` from the Auction House V2 folder (xahau.js).
