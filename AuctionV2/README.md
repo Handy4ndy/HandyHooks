@@ -2,7 +2,7 @@
 
 **Handy Hooks** Auction House (public **V2**) is a four-hook set for running URIToken auctions on a single Xahau host account.
 
-Sellers subscribe, list a token into hook custody, accept bids (XAH or IOU), and settle through one shared **HookNamespace**. The host never needs to sign settlement — Finalise does it on-chain from hook state.
+Sellers subscribe, list a token into hook custody, accept bids (XAH or IOU), and settle through one shared **HookNamespace**. The host never needs to sign settlement: Finalise does it on-chain from hook state.
 
 ---
 
@@ -13,10 +13,10 @@ Subscribe  →  Create  →  Bid  →  Finalise
    Sub          Create      Bids     Finalise
 ```
 
-1. **Subscribe** — A seller pays a subscription fee to the host. That opens a time window and an auction cap. An admin configures price, period, treasury split, and fee settings on the Subscription hook.
-2. **Create** — The seller Remits exactly one non-burnable URIToken to the host with auction parameters (duration, optional start price, min increment, buy-now, currency). The Create hook takes custody of the lot and opens the auction.
-3. **Bid** — Bidders pay the host with the auction id. Higher bids refund the previous high bidder. A buy-now bid can end the auction immediately and hand the token to the winner.
-4. **Finalise** — After expiry (or after buy-now), anyone allowed — seller, winner, or admin — Invokes Finalise with the auction id. The hook delivers the URIToken, pays the seller and treasury, and clears auction state.
+1. **Subscribe**: A seller pays a subscription fee to the host. That opens a time window and an auction cap. An admin configures price, period, treasury split, and fee settings on the Subscription hook.
+2. **Create**: The seller Remits exactly one non-burnable URIToken to the host with auction parameters (duration, optional start price, min increment, buy-now, currency). The Create hook takes custody of the lot and opens the auction.
+3. **Bid**: Bidders pay the host with the auction id. Higher bids refund the previous high bidder. A buy-now bid can end the auction immediately and hand the token to the winner.
+4. **Finalise**: After expiry (or after buy-now), the seller, winner, or admin Invokes Finalise with the auction id. The hook delivers the URIToken, pays the seller and treasury, and clears auction state.
 
 All four hooks must share the **same HookNamespace** so subscription, auction records, fees, and locked bid funds stay consistent.
 
@@ -26,10 +26,10 @@ All four hooks must share the **same HookNamespace** so subscription, auction re
 
 | Hook | Role | Directory | Wasm | HookHash |
 |------|------|-----------|------|----------|
-| **Subscription** | Seller access + admin config | `Subscription/` | 9149 | `6F6FD261…CBDCA68A` |
-| **Create** | Open an auction (URIToken into custody) | `Create/` | 12274 | `D1D4BFCA…22869342` |
-| **Bids** | Accept bids and outbid refunds | `Bids/` | 18399 | `8E5085A3…01F9497A` |
-| **Finalise** | Settle, cancel, or claim stranded refunds | `Finalise/` | 25813 | `5D165115…17619E2A` |
+| **Subscription** | Seller access + admin config | `Subscription/` | 9149 | `6F6FD261...CBDCA68A` |
+| **Create** | Open an auction (URIToken into custody) | `Create/` | 12274 | `D1D4BFCA...22869342` |
+| **Bids** | Accept bids and outbid refunds | `Bids/` | 18399 | `8E5085A3...01F9497A` |
+| **Finalise** | Settle, cancel, or claim stranded refunds | `Finalise/` | 25813 | `5D165115...17619E2A` |
 
 Full hashes (sha512Half):
 
@@ -38,7 +38,7 @@ Full hashes (sha512Half):
 - Bids: `8E5085A30AADFA0554A237442782299AEBDD03BCEF83B27CBBDCB55201F9497A`
 - Finalise: `5D1651156BC4348C8F0CF683AB22698AE7CFD556E1A13F10AA986A5A17619E2A`
 
-Each directory holds the hook source (`.c`), the pinned wasm, headers, and that hook’s integration tests. See the README in each folder for parameters, HookOn, and result strings.
+Each directory holds the hook source (`.c`), the pinned wasm, headers, and that hook's integration tests. See the README in each folder for parameters, HookOn, and result strings.
 
 ---
 
@@ -46,10 +46,10 @@ Each directory holds the hook source (`.c`), the pinned wasm, headers, and that 
 
 Install in this order, all on one host, all with the **same HookNamespace**:
 
-1. **Subscription** — set install param `ADMIN` to your operator account (not the host, not the baked default)
-2. **Create** — no install params
-3. **Bids** — optional same `ADMIN` if you want the CLR clear on this hook
-4. **Finalise** — same `ADMIN` AccountID as Subscription
+1. **Subscription**: set install param `ADMIN` to your operator account (not the host, not the baked default)
+2. **Create**: no install params
+3. **Bids**: optional same `ADMIN` if you want the CLR clear on this hook
+4. **Finalise**: same `ADMIN` AccountID as Subscription
 
 Then admin-Invoke Subscription to set `SUBPRICE`, `SUBPERIOD`, `SUBSPLIT`, `AUCCAP`, `TREASURY`, and `FEE` before sellers can subscribe.
 
@@ -62,7 +62,7 @@ Recommended HookOn:
 | Bids | Payment + Remit + Invoke |
 | Finalise | Invoke |
 
-Create and Bids also gate host outflows against locked bid principal (LCK). Do not install Create as Remit-only or Bids as Payment-only — that gate will not run. Escrow, Check, PayChan, Offer, SetHook, and AccountDelete stay unhooked by design.
+Create and Bids also gate host outflows against locked bid principal (LCK). Do not install Create as Remit-only or Bids as Payment-only: that gate will not run. Escrow, Check, PayChan, Offer, SetHook, and AccountDelete stay unhooked by design.
 
 ---
 
@@ -87,11 +87,11 @@ While an auction is open, has **no bids**, and at least half of its duration rem
 These match the wasm on disk. They are install and runtime rules, not open gaps.
 
 - Install **ADMIN** must not be the baked default (`baked ADMIN refused`). Details are in the Subscription and Finalise READMEs.
-- Bid principal is locked on the host as **LCK** (XAH or per-IOU). Keep extra XAH float for emit fees and Remit reserves — LCK is face-value principal only.
+- Bid principal is locked on the host as **LCK** (XAH or per-IOU). Keep extra XAH float for emit fees and Remit reserves: LCK is face-value principal only.
 - Host Payment checks **SendMax** as well as Amount when present.
 - **Create** refuses non-zero TransferRate, global freeze, clawback, and an existing issuer-side freeze on the host IOU line.
 - Host gen-0 Remit allows at most **3** Amounts.
-- A stranded outbid refund does **not** freeze later bids; the owed bidder can claim it through Finalise.
+- A stranded outbid refund does **not** freeze later bids. The owed bidder can claim it through Finalise.
 - Buy-now URI-fail Finalise retry: seller, Sub ADMIN, or winner.
 
 ---

@@ -1,4 +1,4 @@
-# Auction House — Finalise (`AuctionFinalise`)
+# Auction House: Finalise (`AuctionFinalise`)
 
 Part of **Handy Hooks ~ Auction House** (public V2).
 
@@ -27,13 +27,13 @@ Missing AID → passthrough (Sub admin Invokes coexist). Wrong-size AID → reje
 
 ## Paths
 
-1. **Buy-now claim** — URI already gone; pay seller (+treasury) from HIGH; LCK−; ACTIVE−1; clear AID
-   - **Buy-now URI-fail retry** (KVT #15) — the buy-now URIToken Remit failed, so Bids left `ST=1` + `SSF` + `BNW`. Seller, ADMIN, or the winner (WIN) Invokes to re-send the lot to WIN and pay out. The winner does not have to wait on the seller.
-2. **Timed with bids** — Remit URI→WIN; pay seller (+treasury); LCK−; ACTIVE−1; clear AID
-3. **Timed no bids** — Remit URI→seller; ACTIVE−1; clear AID; no LCK change
-4. **Seller cancel** (`AID` + `CNCL=0x01`) — `ST=1`, no bids, remaining ≥ DUR/2; URI→seller; no LCK change
+1. **Buy-now claim**: URI already gone; pay seller (+treasury) from HIGH; LCK-; ACTIVE-1; clear AID
+   - **Buy-now URI-fail retry** (KVT #15): the buy-now URIToken Remit failed, so Bids left `ST=1` + `SSF` + `BNW`. Seller, ADMIN, or the winner (WIN) Invokes to re-send the lot to WIN and pay out. The winner does not have to wait on the seller.
+2. **Timed with bids**: Remit URI→WIN; pay seller (+treasury); LCK-; ACTIVE-1; clear AID
+3. **Timed no bids**: Remit URI→seller; ACTIVE-1; clear AID; no LCK change
+4. **Seller cancel** (`AID` + `CNCL=0x01`): `ST=1`, no bids, remaining ≥ DUR/2; URI→seller; no LCK change
 
-Emit order (fail-closed): URI Remit (if needed) → treasury fee → seller remainder → then settle commit (LCK− / ACTIVE−1 / clear AID on cbak coverage).
+Emit order (fail-closed): URI Remit (if needed) → treasury fee → seller remainder → then settle commit (LCK- / ACTIVE-1 / clear AID on cbak coverage).
 
 ## FEE / TREASURY (Create snapshot)
 
@@ -68,7 +68,7 @@ Blocked while `PEN` / `LCKU` / `SSF` / `TSF` / `BNW` / in-flight settle; not sel
 - `CLR bad` / `not admin`
 - DONE `marker cleared`
 - `AID must be 32 bytes` / `CNCL needs AID` / `CNCL invalid`
-- `auction not found` / cancel-* blockers (`cancel seller only`, `cancel PEN set`, …)
+- `auction not found` / cancel-* blockers (`cancel seller only`, `cancel PEN set`, ...)
 - `buy-now finalise forbidden` (settled buy-now claim by anyone but seller or ADMIN; URI-fail retry by anyone but seller, ADMIN, or WIN)
 - IOU LCK subtract that would go negative is LCK under (settle sets `SSF` + `LCKU`), never a negative LCK write (KVT #12 class)
 - Settle blocked while PEN/SSF/LCKU as designed. A stranded refund does not block it.
@@ -76,4 +76,4 @@ Blocked while `PEN` / `LCKU` / `SSF` / `TSF` / `BNW` / in-flight settle; not sel
 
 ## Integration tests
 
-`IT_FINALISE.js` — run from this directory (or via root `IT_ALL.js`). Includes shared-NS combined chain cases.
+`IT_FINALISE.js`: run from this directory (or via root `IT_ALL.js`). Includes shared-NS combined chain cases.

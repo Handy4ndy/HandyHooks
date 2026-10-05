@@ -1,4 +1,4 @@
-# Auction House — Create (`AuctionCreate`)
+# Auction House: Create (`AuctionCreate`)
 
 Part of **Handy Hooks ~ Auction House** (public V2).
 
@@ -16,9 +16,9 @@ Open an auction by Remitting exactly one URIToken to the host. Param-free instal
 | Param | Req | Size / notes |
 |-------|-----|----------------|
 | `DUR` | yes | 8 BE uint64 seconds, 300 .. 2592000 (30d) |
-| `SP` | opt | 8 — start price (XAH drops or IOU XFL) |
-| `MB` | opt | 8 — min bid increment; if set must be > 0 |
-| `BN` | opt | 8 — buy-now; if SP+BN set, BN > SP |
+| `SP` | opt | 8: start price (XAH drops or IOU XFL) |
+| `MB` | opt | 8: min bid increment; if set must be > 0 |
+| `BN` | opt | 8: buy-now; if SP+BN set, BN > SP |
 | `CUR` | opt | 3 ASCII / 20 raw / 40 hex; omit = XAH |
 | `ISS` | opt | 20 AccountID; required with CUR for IOU |
 
@@ -36,7 +36,7 @@ Reads seller foreign ns (same as Sub): `SUBEXP`, `ACTIVE`, `CAP`. Requires `SUBE
 
 1. URIToken must not be burnable (`lsfBurnable`)
 2. Seller must not have remits disabled (`asfDisallowIncomingRemit`)
-3. Seller must not have DepositAuth (`lsfDepositAuth`) — so Finalise payouts can land
+3. Seller must not have DepositAuth (`lsfDepositAuth`): so Finalise payouts can land
 
 IOU: if host has no trustline for CUR+ISS, emit TrustSet (large limit, **`tfSetNoRipple`**). Fail-closed on emit / required state write / ACTIVE bump failure.
 
@@ -52,7 +52,7 @@ Create copies the current host `FEE` and `TREASURY` onto the auction. Finalise u
 
 ## Host local state
 
-- `TAC` (4 BE uint32) — total auctions created; +1 after ACTIVE ok. Missing → 0; wrap → fail-closed.
+- `TAC` (4 BE uint32): total auctions created; +1 after ACTIVE ok. Missing → 0; wrap → fail-closed.
 
 ## Happy paths
 
@@ -73,4 +73,4 @@ Create copies the current host `FEE` and `TREASURY` onto the auction. Finalise u
 
 ## Integration tests
 
-`IT_CREATE.js` — run from this directory (or via root `IT_ALL.js`).
+`IT_CREATE.js`: run from this directory (or via root `IT_ALL.js`).

@@ -7,8 +7,8 @@ Checked 5 October 2026 (UK time) on the release pins below. Nothing in this pack
 | Tool | Role in this check | Source |
 | --- | --- | --- |
 | hook-buildbox | Byte-for-byte pin rebuild via `compile_hook.py` | [hook-buildbox.xrpl.org](https://hook-buildbox.xrpl.org/) |
-| xahc | Static wasm lint (`xahc lint`) | [github.com/Hugegreencandle/xahc](https://github.com/Hugegreencandle/xahc) — release **v1.12.0** |
-| hook-repro | Hermetic rebuild attempt (`xhc-bin127`) | [github.com/Hugegreencandle/hook-repro](https://github.com/Hugegreencandle/hook-repro) — commit `57a8efd` |
+| xahc | Static wasm lint (`xahc lint`) | [github.com/Hugegreencandle/xahc](https://github.com/Hugegreencandle/xahc): release **v1.12.0** |
+| hook-repro | Hermetic rebuild attempt (`xhc-bin127`) | [github.com/Hugegreencandle/hook-repro](https://github.com/Hugegreencandle/hook-repro): commit `57a8efd` |
 
 Integration tests use **xahau.js** only (`npm` dependency in `package.json`).
 
@@ -40,10 +40,10 @@ A fresh rebuild of all four came out byte-identical to the pins:
 
 | Hook | Rebuilt bytes | Rebuilt HookHash | Match |
 | --- | ---: | --- | --- |
-| Subscription | 9149 | `6F6FD261…DCA68A` | yes |
-| Create | 12274 | `D1D4BFCA…869342` | yes |
-| Bids | 18399 | `8E5085A3…F9497A` | yes |
-| Finalise | 25813 | `5D165115…619E2A` | yes |
+| Subscription | 9149 | `6F6FD261...DCA68A` | yes |
+| Create | 12274 | `D1D4BFCA...869342` | yes |
+| Bids | 18399 | `8E5085A3...F9497A` | yes |
+| Finalise | 25813 | `5D165115...619E2A` | yes |
 
 ## 2. Static lint (xahc)
 

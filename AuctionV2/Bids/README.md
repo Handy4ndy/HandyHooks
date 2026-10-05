@@ -1,4 +1,4 @@
-# Auction House — Bids (`AuctionBids`)
+# Auction House: Bids (`AuctionBids`)
 
 Part of **Handy Hooks ~ Auction House** (public V2).
 
@@ -19,7 +19,7 @@ Payment without `AID` / not to host → passthrough (Sub / donation). Payment wi
 2. Later bids: if MB set → amount ≥ HIGH+MB; else amount > HIGH
 3. Buy-now: amount ≥ BN → accept, refund any prior high (incl. self-BN), Remit URIToken to winner, set `ST=2` / `BNW=1` on URI cbak success. Seller paid only via Finalise
 4. `HIGH` = actual paid principal; `WIN` = 20-byte bidder; `BCNT` = uint32 BE
-5. Outbid refund: XAH Payment (with stored WDT); IOU Remit Amounts. LCK − prior only on refund cbak success
+5. Outbid refund: XAH Payment (with stored WDT); IOU Remit Amounts. LCK - prior only on refund cbak success
 6. Already-high rebid rejected unless this Payment also hits buy-now
 7. Seller and host cannot bid
 8. Bidder must not have remits disabled or DepositAuth at entry
@@ -49,9 +49,9 @@ Host Payment checks SendMax as well as Amount. `SendMax not drops` if SendMax is
 
 | Key | Meaning |
 |-----|---------|
-| `TBD` | 4 BE u32 — accepted normal bids (not buy-now) |
-| `TBN` | 4 BE u32 — buy-now settles |
-| `LCK` | 8 BE drops — locked XAH principal |
+| `TBD` | 4 BE u32: accepted normal bids (not buy-now) |
+| `TBN` | 4 BE u32: buy-now settles |
+| `LCK` | 8 BE drops: locked XAH principal |
 | IOU lock | `sha512Half(CUR||ISS)` → XFL bits |
 | emit map | emit hash → AID\|amt\|prior\|wdt\|flags (refund/URI cbak) |
 
@@ -82,4 +82,4 @@ Invoke with `AID` (32 bytes) and `CLR` (1 byte). Byte 1 drops PEN. Byte 2 drops 
 
 ## Integration tests
 
-`IT_BIDS.js` — run from this directory (or via root `IT_ALL.js`).
+`IT_BIDS.js`: run from this directory (or via root `IT_ALL.js`).

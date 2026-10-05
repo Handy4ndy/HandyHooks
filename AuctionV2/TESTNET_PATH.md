@@ -1,4 +1,4 @@
-# Auction House V2 — testnet path (one host)
+# Auction House V2: testnet path (one host)
 
 **Handy Hooks ~ Auction House** public V2. NetworkID **21338** (`xahau-test.net`).
 

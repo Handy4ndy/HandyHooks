@@ -1,4 +1,4 @@
-# Auction House — Subscription (`AuctionSub`)
+# Auction House: Subscription (`AuctionSub`)
 
 Part of **Handy Hooks ~ Auction House** (public V2).
 
@@ -23,8 +23,8 @@ Fail-closed until `SUBPRICE`, `SUBPERIOD`, `SUBSPLIT`, `AUCCAP`, and `TREASURY` 
 | `AUCCAP` | 2 | uint16 BE max active auctions per seller, ≥ 1 |
 | `TREASURY` | 20 | account receiving the split (≠ host) |
 | `FEE` | 2 | uint16 BE bps 0..5000 (Finalise seller fee; Create snapshots per auction) |
-| `GRANT` | 20 | seller — extend one SUBPERIOD (same as paid) |
-| `REVOKE` | 20 | seller — clear window (`NOPE` if `ACTIVE > 0`) |
+| `GRANT` | 20 | seller: extend one SUBPERIOD (same as paid) |
+| `REVOKE` | 20 | seller: clear window (`NOPE` if `ACTIVE > 0`) |
 
 ## Seller Payment
 
@@ -44,7 +44,7 @@ Namespace = seller AccountID (20) zero-padded to 32:
 
 ## Happy paths
 
-- Admin sets SUBPRICE / SUBPERIOD / SUBSPLIT / AUCCAP / TREASURY / FEE → `DONE("… updated")`
+- Admin sets SUBPRICE / SUBPERIOD / SUBSPLIT / AUCCAP / TREASURY / FEE → `DONE("... updated")`
 - Seller pays exact SUBPRICE with `SUB` → callback `DONE("Auction subscription successful")`
 - `GRANT` / `REVOKE` by ADMIN on a seller account
 
@@ -61,4 +61,4 @@ Namespace = seller AccountID (20) zero-padded to 32:
 
 ## Integration tests
 
-`IT_SUB.js` — run from this directory (or via root `IT_ALL.js`).
+`IT_SUB.js`: run from this directory (or via root `IT_ALL.js`).
