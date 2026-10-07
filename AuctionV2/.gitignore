@@ -1,8 +1,7 @@
 # Dependencies
 node_modules/
 
-# Local integration / build scratch (not shippable)
-_local_artifacts/
+# Private local tooling and planning notes (not shipped)
 *.build.log
 *.run.log
 *.pins.log
@@ -31,5 +30,5 @@ Desktop.ini
 .vscode/
 .idea/
 
-# XRPLWin ABI / domain-hosted definitions (served separately, not shipped in pack)
+# ABI / domain-hosted definitions (served separately, not shipped in pack)
 abi/

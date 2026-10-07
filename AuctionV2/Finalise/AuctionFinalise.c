@@ -1,45 +1,54 @@
 /**
- * Auction House V2 — AuctionFinalise.c
+ * Auction House V2 - AuctionFinalise.c
  *
  * Finalise auction via Invoke with otxn param AID (32-byte auction ns).
  * One fat file; hookapi.h only. All logic in hook()/cbak().
  *
- * Install: ADMIN (20) — same install-param key as AuctionSub.
+ * Install: ADMIN (20) - same install-param key as AuctionSub.
  *   PW5-M01: ADMIN required only when LCKU is set (migration: installs
  *   without ADMIN OK until LCKU hits). Reject ADMIN == hook account
  *   (Sub-style). NOPE("ADMIN install param required") /
  *   NOPE("ADMIN must not be the host").
  * HookOn: Invoke only. Shares HookNamespace with Sub/Create/Bids for
- * FEE, TREASURY, LCK, TAC (TAC lifetime — never decremented here).
+ * FEE, TREASURY, LCK, TAC (TAC lifetime - never decremented here).
  *
  * Callers:
- *   Buy-now (ST=2 + BNW): seller or ADMIN only
+ *   Buy-now (ST=2 + BNW): seller, WIN, or ADMIN (max bid)
  *   Buy-now URI-fail retry (ST=1 + SSF + BNW): seller, WIN, or ADMIN (KVT #15)
  *   Timed after EXP: seller, WIN (winner), or ADMIN
  *
  * Paths:
- *   1) Buy-now claim: URI already gone; pay seller(+treasury) from HIGH;
- *      LCK-; ACTIVE-1; clear all AID keys
- *   2) Timed with bids: Remit URI→WIN; pay seller(+treasury); LCK-;
- *      ACTIVE-1; clear AID
- *   3) Timed no bids: Remit URI→seller; ACTIVE-1; clear AID; no LCK change
- *   4) Seller cancel (AID+CNCL=0x01): ST=1, no bids, rem>=DUR/2 —
- *      same URI→seller SMAP as path 3; DONE Cancel pending; no LCK change
+ *   1) Buy-now claim: URI already gone; pay seller(+treasury) from price,
+ *      remainder (HIGH - price) to WIN; LCK-; ACTIVE-1; clear all AID keys
+ *   2) Timed with bids: Remit URI->WIN; pay seller(+treasury) from price,
+ *      remainder to WIN; LCK-; ACTIVE-1; clear AID
+ *   3) Timed no bids: Remit URI->seller; ACTIVE-1; clear AID; no LCK change
+ *   4) Seller cancel (AID+CNCL=0x01): ST=1, no bids, rem>=DUR/2 -
+ *      same URI->seller SMAP as path 3; DONE Cancel pending; no LCK change
  *
- * Emit order (fail-closed): URI Remit (if needed) → treasury fee →
- * seller remainder → then state (LCK-, ACTIVE-1, clear AID).
+ * Emit order (fail-closed): URI Remit (if needed) -> treasury fee ->
+ * seller remainder -> then state (LCK-, ACTIVE-1, clear AID).
  *
- * FEE: basis points of HIGH, hard max 5000 (Sub admin state key FEE).
- * Missing FEE or TREASURY → 100% seller. FEE=0 → no treasury emit.
- * XAH payouts = Payment; IOU payouts (seller + treasury) = Remit always.
+ * Price (max bid). HIGH is the escrowed max. Settle price is
+ * PRC.price when PRC (16 bytes, price || HIGH snapshot) is present and its
+ * snapshot equals HIGH. Otherwise the buy-now path uses BN (when BN <= HIGH)
+ * and every other path uses HIGH. Belt: 0 < price <= HIGH.
+ * FEE: basis points of the price, hard max 5000 (Sub admin state key FEE).
+ * Seller gets price minus fee. Winner gets HIGH minus price back as a
+ * remainder leg (SMAP kind 5, SPEN/SEXP bit 0x10, WPAY on cbak). A failed
+ * remainder becomes a winner strand (claimed later via Invoke AID) and does
+ * not block seller, treasury, lot or commit. Claim cbak subtracts the paid
+ * amount from the strand. IFR (bid refunds in flight) blocks settle.
+ * Missing FEE or TREASURY -> 100% seller. FEE=0 -> no treasury emit.
+ * XAH payouts = Payment; IOU payouts (seller, treasury, remainder) = Remit.
  *
- * Judgment: missing AID → passthrough (Sub admin Invoke coexistence);
- * wrong-size AID → reject. CNCL present + AID missing/wrong →
- * NOPE(CNCL needs AID). Non-Invoke / outgoing / emit re-entry →
+ * Judgment: missing AID -> passthrough (Sub admin Invoke coexistence);
+ * wrong-size AID -> reject. CNCL present + AID missing/wrong ->
+ * NOPE(CNCL needs AID). Non-Invoke / outgoing / emit re-entry ->
  * passthrough.
  *
- * KVT #6: CLR present (1 byte, 0x01 PEN / 0x02 SPEN / 0x03 both) is an
- * installed-ADMIN clear of that marker. No emit, no LCK write, no strand
+ * KVT #6: CLR present (1 byte bitmask 0x01 to 0x07: 0x01 PEN, 0x02 SPEN,
+ * 0x04 IFR) is an installed-ADMIN clear of those markers. No emit, no LCK write, no strand
  * delete. CLR absent leaves CNCL and settle unchanged. HookOn stays Invoke.
  *
  * Stranded refund claim:
@@ -48,23 +57,23 @@
  *   account Invokes AID to claim. Legacy RFD still pays that RFDA.
  *   In-flight PEN/SPEN still reject. No auto-RETRY.
  *
- * PW4-H01 A2 / M01 S1 (Andy locked):
+ * PW4-H01 A2 / M01 S1:
  *   ok-under refund is forensic (LCKU+SSF), not claimable RFD (L5 superseded).
- *   PEN+RFD both set → NOPE(refund state corrupt) belt.
+ *   PEN+RFD both set -> NOPE(refund state corrupt) belt.
  *   Seller or ADMIN Invoke with AID clears LCKU; clears SSF unless BNW set; no emit.
  *   PW5-H01 Option 2: keep SSF when BNW present so ST=1+SSF+BNW buynow classify survives.
  *   Settle AID/ACTIVE commit blocked while SSF set (M01 S1).
  *
- * PW5-M02 (Andy locked):
- *   Settle money LCK-under → set SSF+LCKU (reuse H01 Option 2 ack).
+ * PW5-M02:
+ *   Settle money LCK-under -> set SSF+LCKU (reuse H01 Option 2 ack).
  *   Keep lock A (TPAY/SPAY on under). Keep S1. Emit-prep clears SSF only
- *   (never LCKU). Ack→retry→under→ack OK until ops repairs LCK.
+ *   (never LCKU). Ack->retry->under->ack OK until ops repairs LCK.
  */
 #define HAS_CALLBACK
 #include "hookapi.h"
 
 /* KVT #10. Published Finalise definition default ADMIN
- * (HookHash DEB6ABA1…51AE4AD4 parameter ADMIN).
+ * (HookHash DEB6ABA1...51AE4AD4 parameter ADMIN).
  * r3CANwccnAMqEyYeBW3q7Gk9sMAfuYZe45
  * hook_param returns these bytes when the installer does not override.
  * An override to any other account still passes. */
@@ -88,11 +97,12 @@ static const uint8_t BAKED_ADMIN[20] = {
 #define LT_URI_TOKEN 0x0055U
 #endif
 
-/* Refund cbak map flags — must match AuctionBids.c */
+/* Refund cbak map flags - must match AuctionBids.c */
 #define RMAP_HAS_WDT  0x01U
 #define RMAP_IS_CLAIM 0x02U
 #define RMAP_IS_IOU   0x04U
 #define RMAP_IS_STRAND 0x10U
+#define RMAP_IFR      0x20U
 /* Must match AuctionBids.c strand record. */
 #define STRAND_MARK   0x52U
 #define STRAND_LEN    53U
@@ -103,11 +113,14 @@ static const uint8_t BAKED_ADMIN[20] = {
 #define SMAP_KIND_URI   2U
 #define SMAP_KIND_TREAS 3U
 #define SMAP_KIND_SELL  4U
+#define SMAP_KIND_RMD   5U
 #define SMAP_LEN        67U
+#define SMAP_HAS_WDT    0x01U
 #define SMAP_IS_IOU     0x04U
 #define SPEN_BIT_URI    0x02U
 #define SPEN_BIT_TREAS  0x04U
 #define SPEN_BIT_SELL   0x08U
+#define SPEN_BIT_RMD    0x10U
 
 #define KEY_ACTIVE       "ACTIVE"
 #define KEY_ACTIVE_LEN   6
@@ -134,7 +147,7 @@ int64_t cbak(uint32_t what)
             ok = 0;
     }
 
-    /* PW-C01: TSF reclaim map (32 → AID) */
+    /* PW-C01: TSF reclaim map (32 -> AID) */
     {
         uint8_t aid_tsf[32];
         if (state(SBUF(aid_tsf), SBUF(txid)) == 32)
@@ -179,6 +192,8 @@ int64_t cbak(uint32_t what)
             bit = SPEN_BIT_TREAS;
         else if (kind == SMAP_KIND_SELL)
             bit = SPEN_BIT_SELL;
+        else if (kind == SMAP_KIND_RMD)
+            bit = SPEN_BIT_RMD;
 
         {
             uint8_t sp = 0;
@@ -192,7 +207,7 @@ int64_t cbak(uint32_t what)
             }
         }
 
-        if (!ok)
+        if (!ok && kind != SMAP_KIND_RMD)
         {
             uint8_t one = 1;
             state_foreign_set(&one, 1, "SSF", 3, aid, 32, hook_acc, 20);
@@ -200,13 +215,129 @@ int64_t cbak(uint32_t what)
             DONE("settle cbak fail");
         }
 
+        /* Max bid: failed remainder -> winner strand (same record
+         * and merge rule as Bids refund strands). LCK unchanged: the amount
+         * moves from in-flight settle leg to strand. WPAY=1 so commit can
+         * proceed. Short strand write -> SSF+LCKU, WPAY unset (commit held). */
+        if (!ok)
+        {
+            uint8_t dest[20];
+            uint8_t wdt[4];
+            uint8_t skey[32];
+            uint8_t sb[STRAND_LEN];
+            int has_wdt = (flags & SMAP_HAS_WDT) ? 1 : 0;
+            int merge_ok = 1;
+            int si;
+            for (si = 0; GUARD(20), si < 20; ++si)
+                dest[si] = smap[42 + si];
+            for (si = 0; GUARD(4), si < 4; ++si)
+                wdt[si] = smap[62 + si];
+            skey[0] = STRAND_MARK;
+            for (si = 0; GUARD(20), si < 20; ++si)
+                skey[1 + si] = dest[si];
+            for (si = 21; GUARD(32), si < 32; ++si)
+                skey[si] = 0;
+            for (si = 0; GUARD(53), si < STRAND_LEN; ++si)
+                sb[si] = 0;
+            {
+                uint8_t oldb[STRAND_LEN];
+                if (state_foreign(oldb, STRAND_LEN, skey, 32, aid, 32,
+                                  hook_acc, 20) == STRAND_LEN)
+                {
+                    int old_iou = (oldb[12] & STRAND_F_IOU) ? 1 : 0;
+                    if (old_iou != is_iou)
+                        merge_ok = 0;
+                    else if (!is_iou)
+                    {
+                        uint64_t a = UINT64_FROM_BUF(oldb);
+                        uint64_t b = UINT64_FROM_BUF(amt);
+                        uint64_t sum = a + b;
+                        if (sum < a)
+                            merge_ok = 0;
+                        else
+                            UINT64_TO_BUF(sb, sum);
+                    }
+                    else
+                    {
+                        int64_t sum = float_sum((int64_t)UINT64_FROM_BUF(oldb),
+                                                (int64_t)UINT64_FROM_BUF(amt));
+                        if (sum < 0 || float_sign(sum) != 0)
+                            merge_ok = 0;
+                        else
+                            UINT64_TO_BUF(sb, (uint64_t)sum);
+                    }
+                    if (merge_ok)
+                    {
+                        sb[12] = oldb[12];
+                        for (si = 0; GUARD(4), si < 4; ++si)
+                            sb[8 + si] = oldb[8 + si];
+                        if (!(sb[12] & STRAND_F_WDT) && has_wdt)
+                        {
+                            sb[12] = (uint8_t)(sb[12] | STRAND_F_WDT);
+                            for (si = 0; GUARD(4), si < 4; ++si)
+                                sb[8 + si] = wdt[si];
+                        }
+                        for (si = 0; GUARD(40), si < 40; ++si)
+                            sb[13 + si] = oldb[13 + si];
+                    }
+                }
+                else
+                {
+                    for (si = 0; GUARD(8), si < 8; ++si)
+                        sb[si] = amt[si];
+                    if (has_wdt)
+                    {
+                        sb[12] = (uint8_t)(sb[12] | STRAND_F_WDT);
+                        for (si = 0; GUARD(4), si < 4; ++si)
+                            sb[8 + si] = wdt[si];
+                    }
+                    if (is_iou)
+                    {
+                        uint8_t ci[40];
+                        sb[12] = (uint8_t)(sb[12] | STRAND_F_IOU);
+                        if (state_foreign(ci, 20, "CUR", 3, aid, 32,
+                                          hook_acc, 20) == 20
+                            && state_foreign(ci + 20, 20, "ISS", 3, aid, 32,
+                                             hook_acc, 20) == 20)
+                        {
+                            for (si = 0; GUARD(40), si < 40; ++si)
+                                sb[13 + si] = ci[si];
+                        }
+                        else
+                            merge_ok = 0;
+                    }
+                }
+            }
+            if (!merge_ok
+                || state_foreign_set(sb, STRAND_LEN, skey, 32, aid, 32,
+                                     hook_acc, 20) != STRAND_LEN)
+            {
+                uint8_t one = 1;
+                state_foreign_set(&one, 1, "SSF", 3, aid, 32, hook_acc, 20);
+                state_foreign_set(&one, 1, "LCKU", 4, aid, 32, hook_acc, 20);
+                state_set(0, 0, SBUF(txid));
+                DONE("remainder strand failed");
+            }
+            /* Latest owe, for readers. The strand key is what claim pays. */
+            state_foreign_set(amt, 8, "RFD", 3, aid, 32, hook_acc, 20);
+            state_foreign_set(dest, 20, "RFDA", 4, aid, 32, hook_acc, 20);
+            if (has_wdt)
+                state_foreign_set(wdt, 4, "RFDT", 4, aid, 32, hook_acc, 20);
+            else
+                state_foreign_set(0, 0, "RFDT", 4, aid, 32, hook_acc, 20);
+            {
+                uint8_t one = 1;
+                state_foreign_set(&one, 1, "WPAY", 4, aid, 32, hook_acc, 20);
+            }
+        }
+
         if (kind == SMAP_KIND_URI)
         {
             uint8_t one = 1;
             state_foreign_set(&one, 1, "UOK", 3, aid, 32, hook_acc, 20);
             {
-                /* PW-H02: timed URI ok → UOK only, leave ST=1, no BNW.
-                 * Buy-now repair (BNW already set) → ST=2 keep BNW. */
+                /* PW-H02: timed URI ok -> UOK only, leave ST=1, no BNW.
+                 * Buy-now repair (BNW already set) -> ST=2 keep BNW. */
                 uint8_t bnw_chk = 0;
                 int already_bnw =
                     (state_foreign(&bnw_chk, 1, "BNW", 3, aid, 32, hook_acc, 20)
@@ -221,9 +352,10 @@ int64_t cbak(uint32_t what)
             state_foreign_set(0, 0, "URI", 3, aid, 32, hook_acc, 20);
             state_foreign_set(0, 0, "SSF", 3, aid, 32, hook_acc, 20);
         }
-        else if (kind == SMAP_KIND_TREAS || kind == SMAP_KIND_SELL)
+        else if (ok && (kind == SMAP_KIND_TREAS || kind == SMAP_KIND_SELL
+                        || kind == SMAP_KIND_RMD))
         {
-            /* PW3-M03 lock A: under → set SSF, still set TPAY/SPAY */
+            /* PW3-M03 lock A: under -> set SSF, still set TPAY/SPAY/WPAY */
             {
                 int lck_under = 0;
                 if (is_iou)
@@ -290,7 +422,7 @@ int64_t cbak(uint32_t what)
                         lck_under = 1;
                 }
                 {
-                    /* PW3-M03 lock A + PW5-M02: under → SSF+LCKU, still TPAY/SPAY */
+                    /* PW3-M03 lock A + PW5-M02: under -> SSF+LCKU, still TPAY/SPAY */
                     uint8_t one = 1;
                     if (lck_under)
                     {
@@ -302,8 +434,11 @@ int64_t cbak(uint32_t what)
                     if (kind == SMAP_KIND_TREAS)
                         state_foreign_set(&one, 1, "TPAY", 4, aid, 32,
                                           hook_acc, 20);
-                    else
+                    else if (kind == SMAP_KIND_SELL)
                         state_foreign_set(&one, 1, "SPAY", 4, aid, 32,
+                                          hook_acc, 20);
+                    else
+                        state_foreign_set(&one, 1, "WPAY", 4, aid, 32,
                                           hook_acc, 20);
                 }
             }
@@ -327,6 +462,9 @@ int64_t cbak(uint32_t what)
                                               hook_acc, 20) == 1 && tpay);
                 int has_spay = (state_foreign(&spay, 1, "SPAY", 4, aid, 32,
                                               hook_acc, 20) == 1 && spay);
+                uint8_t wpay = 0;
+                int has_wpay = (state_foreign(&wpay, 1, "WPAY", 4, aid, 32,
+                                              hook_acc, 20) == 1 && wpay);
                 int covered = 1;
                 if ((sexp & SPEN_BIT_URI) && !has_uok)
                     covered = 0;
@@ -334,7 +472,9 @@ int64_t cbak(uint32_t what)
                     covered = 0;
                 if ((sexp & SPEN_BIT_SELL) && !has_spay)
                     covered = 0;
-                /* empty SEXP + no busy: nothing expected — do not wipe */
+                if ((sexp & SPEN_BIT_RMD) && !has_wpay)
+                    covered = 0;
+                /* empty SEXP + no busy: nothing expected - do not wipe */
                 if (sexp == 0)
                     covered = 0;
                 /* PW4-M01 S1: never AID/ACTIVE commit while SSF set */
@@ -403,14 +543,24 @@ int64_t cbak(uint32_t what)
                     state_foreign_set(0, 0, "SPAY", 4, aid, 32, hook_acc, 20);
                     state_foreign_set(0, 0, "SEXP", 4, aid, 32, hook_acc, 20);
                     state_foreign_set(0, 0, "TSF", 3, aid, 32, hook_acc, 20);
+                    /* Max bid. Strand keys stay on purpose. */
+                    state_foreign_set(0, 0, "PRC", 3, aid, 32, hook_acc, 20);
+                    state_foreign_set(0, 0, "WPAY", 4, aid, 32, hook_acc, 20);
+                    state_foreign_set(0, 0, "IFR", 3, aid, 32, hook_acc, 20);
                     DONE("settle commit ok");
                 }
             }
         }
+        if (kind == SMAP_KIND_RMD)
+        {
+            if (ok)
+                DONE("remainder cbak ok");
+            DONE("remainder stranded");
+        }
         DONE("settle cbak ok");
     }
 
-    /* RMAP claim (65) — M03: clear map after LCK- */
+    /* RMAP claim (65) - M03: clear map after LCK- */
     uint8_t mapv[65];
     if (state(SBUF(mapv), SBUF(txid)) != 65)
         DONE("cbak unmap");
@@ -435,7 +585,17 @@ int64_t cbak(uint32_t what)
     (void)wdt;
     (void)prior;
 
-    state_foreign_set(0, 0, "PEN", 3, aid, 32, hook_acc, 20);
+    /* Clear PEN only when it is this claim (belt) */
+    {
+        uint8_t pen_now[32];
+        if (state_foreign(pen_now, 32, "PEN", 3, aid, 32, hook_acc, 20) == 32)
+        {
+            int mine = 0;
+            BUFFER_EQUAL(mine, pen_now, txid, 32);
+            if (mine)
+                state_foreign_set(0, 0, "PEN", 3, aid, 32, hook_acc, 20);
+        }
+    }
 
     if (!ok)
     {
@@ -538,6 +698,56 @@ int64_t cbak(uint32_t what)
             state_set(lb, 8, "LCK", 3);
         }
     }
+    /* Max bid: subtract the paid amount from the strand. Delete it
+     * only at zero. A merge that landed while this claim was in flight
+     * stays claimable. The RFD mirror is cleared only when the strand is
+     * gone (or for a legacy RFD claim). */
+    int strand_left = 0;
+    if (flags & RMAP_IS_STRAND)
+    {
+        uint8_t skey[32];
+        uint8_t sb[STRAND_LEN];
+        int si;
+        skey[0] = STRAND_MARK;
+        for (si = 0; GUARD(20), si < 20; ++si)
+            skey[1 + si] = prior[si];
+        for (si = 21; GUARD(32), si < 32; ++si)
+            skey[si] = 0;
+        if (state_foreign(sb, STRAND_LEN, skey, 32, aid, 32, hook_acc, 20)
+            == STRAND_LEN)
+        {
+            if (is_iou)
+            {
+                int64_t left = float_sum((int64_t)UINT64_FROM_BUF(sb),
+                                         float_negate((int64_t)UINT64_FROM_BUF(amt)));
+                if (left >= 0 && float_sign(left) == 0
+                    && float_compare(left, 0, COMPARE_GREATER) == 1)
+                {
+                    UINT64_TO_BUF(sb, (uint64_t)left);
+                    strand_left = 1;
+                }
+            }
+            else
+            {
+                uint64_t have = UINT64_FROM_BUF(sb);
+                uint64_t paid = UINT64_FROM_BUF(amt);
+                if (have > paid)
+                {
+                    UINT64_TO_BUF(sb, have - paid);
+                    strand_left = 1;
+                }
+            }
+        }
+        if (strand_left)
+        {
+            if (state_foreign_set(sb, STRAND_LEN, skey, 32, aid, 32,
+                                  hook_acc, 20) != STRAND_LEN)
+                strand_left = 0;
+        }
+        if (!strand_left)
+            state_foreign_set(0, 0, skey, 32, aid, 32, hook_acc, 20);
+    }
+    if (!strand_left)
     {
         uint8_t rfda_now[20];
         int mirror = 1;
@@ -555,18 +765,9 @@ int64_t cbak(uint32_t what)
             state_foreign_set(0, 0, "RFDT", 4, aid, 32, hook_acc, 20);
         }
     }
-    if (flags & RMAP_IS_STRAND)
-    {
-        uint8_t skey[32];
-        int si;
-        skey[0] = STRAND_MARK;
-        for (si = 0; GUARD(20), si < 20; ++si)
-            skey[1 + si] = prior[si];
-        for (si = 21; GUARD(32), si < 32; ++si)
-            skey[si] = 0;
-        state_foreign_set(0, 0, skey, 32, aid, 32, hook_acc, 20);
-    }
     state_set(0, 0, SBUF(txid));
+    if (strand_left)
+        DONE("claim cbak partial");
     DONE("claim cbak ok");
 }
 
@@ -613,7 +814,7 @@ int64_t hook(uint32_t reserved)
                             int64_t rc = slot_count(12);
                             if (rc <= 0)
                                 NOPE("Remit Amounts unreadable");
-                            /* KVT #13 (Andy locked): host gen-0 Remit carries at most
+                            /* KVT #13: host gen-0 Remit carries at most
                              * 3 Amounts. Above that fail closed with a named NOPE.
                              * Outer GUARD covers ri < rc with rc <= 3. */
                             if (rc > 3)
@@ -630,7 +831,7 @@ int64_t hook(uint32_t reserved)
                                     int64_t al = slot(SBUF(ab), 14);
                                     if (al == 8)
                                     {
-                                        /* Keep STAmount wire bits — match bal UINT64_FROM_BUF */
+                                        /* Keep STAmount wire bits - match bal UINT64_FROM_BUF */
                                         uint64_t d = UINT64_FROM_BUF(ab);
                                         if (d > 0ULL)
                                         {
@@ -785,9 +986,7 @@ int64_t hook(uint32_t reserved)
         int64_t clr_len = otxn_param(SBUF(clr_buf), "CLR", 3);
         if (clr_len != DOESNT_EXIST)
         {
-            if (clr_len != 1 ||
-                (clr_buf[0] != 0x01U && clr_buf[0] != 0x02U &&
-                 clr_buf[0] != 0x03U))
+            if (clr_len != 1 || clr_buf[0] == 0U || clr_buf[0] > 0x07U)
                 NOPE("CLR bad");
 
             uint8_t clr_aid[32];
@@ -819,7 +1018,7 @@ int64_t hook(uint32_t reserved)
             /* Same namespace keys as Bids. PEN 0x50 0x45 0x4E.
              * SPEN 0x53 0x50 0x45 0x4E. Namespace is the 32-byte AID.
              * Absent marker is a clean no-op. */
-            if (clr_buf[0] == 0x01U || clr_buf[0] == 0x03U)
+            if (clr_buf[0] & 0x01U)
             {
                 uint8_t pen_chk[32];
                 if (state_foreign(pen_chk, 32, "PEN", 3, clr_aid, 32,
@@ -830,7 +1029,7 @@ int64_t hook(uint32_t reserved)
                         NOPE("PEN write failed");
                 }
             }
-            if (clr_buf[0] == 0x02U || clr_buf[0] == 0x03U)
+            if (clr_buf[0] & 0x02U)
             {
                 uint8_t spen_chk = 0;
                 if (state_foreign(&spen_chk, 1, "SPEN", 4, clr_aid, 32,
@@ -841,17 +1040,29 @@ int64_t hook(uint32_t reserved)
                         NOPE("SPEN write failed");
                 }
             }
+            /* Max bid: bit 0x04 drops a stuck IFR counter */
+            if (clr_buf[0] & 0x04U)
+            {
+                uint8_t ifr_chk[2];
+                if (state_foreign(ifr_chk, 2, "IFR", 3, clr_aid, 32,
+                                  hook_acc, 20) == 2)
+                {
+                    if (state_foreign_set(0, 0, "IFR", 3, clr_aid, 32,
+                                          hook_acc, 20) < 0)
+                        NOPE("IFR write failed");
+                }
+            }
             DONE("marker cleared");
         }
     }
 
-    /* CNCL peek — seller cancel. Present + AID missing/wrong → NOPE. */
+    /* CNCL peek - seller cancel. Present + AID missing/wrong -> NOPE. */
     uint8_t cncl_buf[8];
     int64_t cncl_len = otxn_param(SBUF(cncl_buf), "CNCL", 4);
     int has_cncl = (cncl_len >= 0) ? 1 : 0;
 
-    /* AID: missing → passthrough (Sub admin Invokes); wrong size → reject.
-     * CNCL present + AID missing/wrong → NOPE("CNCL needs AID"). */
+    /* AID: missing -> passthrough (Sub admin Invokes); wrong size -> reject.
+     * CNCL present + AID missing/wrong -> NOPE("CNCL needs AID"). */
     uint8_t aid[32];
     {
         int64_t alen = otxn_param(SBUF(aid), "AID", 3);
@@ -865,7 +1076,7 @@ int64_t hook(uint32_t reserved)
         }
     }
 
-    /* -------- Seller cancel (CNCL) — early exit before TSF/settle -------- */
+    /* -------- Seller cancel (CNCL) - early exit before TSF/settle -------- */
     if (has_cncl)
     {
         if (cncl_len != 1 || cncl_buf[0] != 0x01U)
@@ -923,6 +1134,13 @@ int64_t hook(uint32_t reserved)
             if (state_foreign(&spen_chk, 1, "SPEN", 4, aid, 32, hook_acc, 20)
                 == 1 && spen_chk != 0)
                 NOPE("cancel pending in flight");
+        }
+        /* Max bid belt: tracked bid refunds still in flight */
+        {
+            uint8_t ifr[2];
+            if (state_foreign(ifr, 2, "IFR", 3, aid, 32, hook_acc, 20) == 2
+                && (ifr[0] | ifr[1]) != 0)
+                NOPE("cancel refunds in flight");
         }
 
         /* No bids: WIN absent AND HIGH absent; BCNT missing or 0 */
@@ -1007,7 +1225,7 @@ int64_t hook(uint32_t reserved)
             }
         }
 
-        /* Reuse timed no-bids: URI Remit → seller + SMAP URI leg */
+        /* Reuse timed no-bids: URI Remit -> seller + SMAP URI leg */
         if (etxn_reserve(1) != 1)
             NOPE("emit reserve failed");
 
@@ -1105,7 +1323,7 @@ int64_t hook(uint32_t reserved)
         if (uri_len == 0 || uri_len > 384U)
             NOPE("URI Remit build failed");
 
-        /* SEXP/SPEN URI bit — same as timed no-bids */
+        /* SEXP/SPEN URI bit - same as timed no-bids */
         {
             uint8_t emitting = (uint8_t)SPEN_BIT_URI;
             uint8_t sexp = 0;
@@ -1601,6 +1819,15 @@ int64_t hook(uint32_t reserved)
         }
     }
 
+    /* Max bid: claims above still run while tracked bid refunds
+     * are in flight. Settle waits until IFR is back to zero. */
+    {
+        uint8_t ifr[2];
+        if (state_foreign(ifr, 2, "IFR", 3, aid, 32, hook_acc, 20) == 2
+            && (ifr[0] | ifr[1]) != 0)
+            NOPE("refunds in flight");
+    }
+
     /* -------- Load auction state -------- */
     uint8_t st = 0;
     if (state_foreign(&st, 1, "ST", 2, aid, 32, hook_acc, 20) != 1)
@@ -1643,7 +1870,7 @@ int64_t hook(uint32_t reserved)
         BUFFER_EQUAL(is_admin, otxn_acc, admin, 20);
 
 
-    /* PW5-H01 Option 2 + PW5-M01: LCKU forensic — seller/ADMIN Invoke acks
+    /* PW5-H01 Option 2 + PW5-M01: LCKU forensic - seller/ADMIN Invoke acks
      * (always clear LCKU; clear SSF only when BNW absent). No emit.
      * M01-A (locked): ADMIN install param required only when LCKU set;
      * reject ADMIN == hook (Sub-style). Buy-now Finalise auth unchanged. */
@@ -1670,7 +1897,7 @@ int64_t hook(uint32_t reserved)
     }
 
     /* Classify path.
-     * PW-H03: timed SSF (no BNW) → path_timed with WIN auth.
+     * PW-H03: timed SSF (no BNW) -> path_timed with WIN auth.
      * Buy-now: ST=2+BNW or ST=1+SSF+BNW (Bids URI fail sets BNW w/o ST=2). */
     int path_buynow = 0;
     int path_bn_retry = 0;
@@ -1689,7 +1916,7 @@ int64_t hook(uint32_t reserved)
         }
         else if (st == 1 && has_ssf)
         {
-            /* timed settle strand — skip EXP re-check */
+            /* timed settle strand - skip EXP re-check */
             path_timed = 1;
         }
         else if (st == 1)
@@ -1709,7 +1936,7 @@ int64_t hook(uint32_t reserved)
             NOPE("auction not finalisable");
     }
 
-    /* Winner (optional — required for timed-with-bids) */
+    /* Winner (optional - required for timed-with-bids) */
     uint8_t win[20];
     uint8_t high_buf[8];
     int has_bids = 0;
@@ -1740,12 +1967,14 @@ int64_t hook(uint32_t reserved)
     /* Caller auth */
     if (path_buynow)
     {
-        /* KVT #15 (Andy locked): on the buy-now URI-fail retry
+        /* KVT #15: on the buy-now URI-fail retry
          * (ST=1+SSF+BNW) the winner may Invoke too, so the lot is not
-         * stranded waiting on the seller. Settled buy-now claim (ST=2+BNW)
-         * stays seller or ADMIN only. */
+         * stranded waiting on the seller. Max bid:
+         * the winner may also Invoke the settled buy-now (ST=2+BNW) so an
+         * overpay refund does not wait on the seller. */
         int is_win = 0;
-        if (path_bn_retry && has_bids)
+        (void)path_bn_retry;
+        if (has_bids)
             BUFFER_EQUAL(is_win, otxn_acc, win, 20);
         if (!(is_seller || is_admin || is_win))
             NOPE("buy-now finalise forbidden");
@@ -1829,13 +2058,13 @@ int64_t hook(uint32_t reserved)
         if (!bad)
             treas_ok = 1;
     }
-    /* Missing FEE or TREASURY → 100% seller (no treasury split) */
+    /* Missing FEE or TREASURY -> 100% seller (no treasury split) */
     int do_fee = 0;
     if (fee_ok && treas_ok && fee_bps > 0U && has_bids)
         do_fee = 1;
 
     /* URI needed for timed paths; buy-now also if URI key still hosted (C02).
-     * PW-H02: UOK set means URI already delivered — do not re-require URI key. */
+     * PW-H02: UOK set means URI already delivered - do not re-require URI key. */
     uint8_t uri[32];
     int need_uri = 0;
     {
@@ -1895,71 +2124,147 @@ int64_t hook(uint32_t reserved)
         }
     }
 
-    /* Payout amounts from HIGH (buy-now or timed-with-bids) */
+    /* Payout amounts (max bid). price = PRC.price when PRC is
+     * present and its HIGH snapshot equals HIGH. Else buy-now path uses BN
+     * (when BN <= HIGH), else HIGH. fee = bps of price, seller = price - fee,
+     * remainder = HIGH - price back to WIN. Never pay the seller less than
+     * a valid price. */
     uint64_t high_drops = 0;
     int64_t high_xfl = 0;
     uint64_t fee_drops = 0;
     uint64_t seller_drops = 0;
+    uint64_t rmd_drops = 0;
     int64_t fee_xfl = 0;
     int64_t seller_xfl = 0;
+    int64_t rmd_xfl = 0;
+    int has_rmd = 0;
+    uint32_t rmd_tag = 0;
+    int rmd_has_wdt = 0;
     if (has_bids)
     {
+        /* Raw 8-byte value (XAH drops BE or IOU XFL bits), same as HIGH */
+        uint64_t high_raw = UINT64_FROM_BUF(high_buf);
+        uint64_t price_raw = high_raw;
+        {
+            uint8_t prc_buf[16];
+            uint8_t bn_buf[8];
+            int prc_ok = 0;
+            if (state_foreign(prc_buf, 16, "PRC", 3, aid, 32, hook_acc, 20)
+                == 16
+                && UINT64_FROM_BUF(prc_buf + 8) == high_raw)
+            {
+                prc_ok = 1;
+                price_raw = UINT64_FROM_BUF(prc_buf);
+            }
+            if (!prc_ok && path_buynow
+                && state_foreign(bn_buf, 8, "BN", 2, aid, 32, hook_acc, 20) == 8)
+            {
+                uint64_t bn_raw = UINT64_FROM_BUF(bn_buf);
+                if (is_iou)
+                {
+                    int64_t bx = (int64_t)bn_raw;
+                    if (bx > 0 && float_sign(bx) == 0
+                        && float_compare(bx, 0, COMPARE_GREATER) == 1
+                        && float_compare(bx, (int64_t)high_raw, COMPARE_GREATER)
+                           != 1)
+                        price_raw = bn_raw;
+                }
+                else if (bn_raw > 0ULL && bn_raw <= high_raw)
+                    price_raw = bn_raw;
+            }
+        }
+        {
+            uint8_t wdtb[4];
+            if (state_foreign(wdtb, 4, "WDT", 3, aid, 32, hook_acc, 20) == 4)
+            {
+                rmd_tag = (uint32_t)UINT32_FROM_BUF(wdtb);
+                rmd_has_wdt = 1;
+            }
+        }
         if (is_iou)
         {
             high_xfl = (int64_t)UINT64_FROM_BUF(high_buf);
-            if (float_compare(high_xfl, 0, COMPARE_GREATER) != 1)
+            if (high_xfl <= 0 || float_sign(high_xfl) != 0
+                || float_compare(high_xfl, 0, COMPARE_GREATER) != 1)
                 NOPE("HIGH invalid");
+            int64_t price_xfl = (int64_t)price_raw;
+            if (price_xfl <= 0 || float_sign(price_xfl) != 0
+                || float_compare(price_xfl, 0, COMPARE_GREATER) != 1
+                || float_compare(price_xfl, high_xfl, COMPARE_GREATER) == 1)
+                NOPE("price state corrupt");
+            seller_xfl = price_xfl;
             if (do_fee)
             {
                 int64_t rate = float_set(-4, (int64_t)fee_bps);
                 if (rate < 0)
                     NOPE("FEE rate float_set failed");
-                fee_xfl = float_multiply(high_xfl, rate);
-                if (fee_xfl < 0)
+                int64_t fee_raw = float_multiply(price_xfl, rate);
+                if (fee_raw < 0)
                     NOPE("FEE multiply failed");
-                if (float_compare(fee_xfl, 0, COMPARE_GREATER) != 1)
-                {
-                    /* dust fee → all to seller */
-                    do_fee = 0;
-                    fee_xfl = 0;
-                    seller_xfl = high_xfl;
-                }
+                if (float_compare(fee_raw, 0, COMPARE_GREATER) != 1)
+                    do_fee = 0; /* dust fee -> all to seller */
                 else
                 {
-                    seller_xfl = float_sum(high_xfl, float_negate(fee_xfl));
-                    if (seller_xfl < 0)
+                    seller_xfl = float_sum(price_xfl, float_negate(fee_raw));
+                    if (seller_xfl <= 0 || float_sign(seller_xfl) != 0)
                         NOPE("seller remainder failed");
+                    /* fee + seller == price exactly */
+                    fee_xfl = float_sum(price_xfl, float_negate(seller_xfl));
+                    if (fee_xfl < 0 || float_sign(fee_xfl) != 0)
+                        NOPE("FEE multiply failed");
+                    if (float_compare(fee_xfl, 0, COMPARE_GREATER) != 1)
+                    {
+                        do_fee = 0;
+                        fee_xfl = 0;
+                        seller_xfl = price_xfl;
+                    }
                 }
             }
-            else
-                seller_xfl = high_xfl;
+            if (float_compare(price_xfl, high_xfl, COMPARE_LESS) == 1)
+            {
+                rmd_xfl = float_sum(high_xfl, float_negate(price_xfl));
+                if (rmd_xfl < 0 || float_sign(rmd_xfl) != 0)
+                    NOPE("price state corrupt");
+                if (float_compare(rmd_xfl, 0, COMPARE_GREATER) == 1)
+                    has_rmd = 1;
+            }
         }
         else
         {
             high_drops = UINT64_FROM_BUF(high_buf);
             if (high_drops == 0ULL)
                 NOPE("HIGH invalid");
+            uint64_t price_drops = price_raw;
+            if (price_drops == 0ULL || price_drops > high_drops)
+                NOPE("price state corrupt");
+            seller_drops = price_drops;
             if (do_fee)
             {
-                fee_drops = (high_drops * (uint64_t)fee_bps) / 10000ULL;
-                if (fee_drops > high_drops)
+                /* bps <= 5000: price * bps fits u64 below this bound */
+                if (price_drops > 3689348814741910ULL)
+                    NOPE("FEE overflow");
+                fee_drops = (price_drops * (uint64_t)fee_bps) / 10000ULL;
+                if (fee_drops > price_drops)
                     NOPE("FEE overflow");
                 if (fee_drops == 0ULL)
                     do_fee = 0;
-                seller_drops = high_drops - fee_drops;
+                seller_drops = price_drops - fee_drops;
             }
-            else
-                seller_drops = high_drops;
+            rmd_drops = high_drops - price_drops;
+            if (rmd_drops > 0ULL)
+                has_rmd = 1;
         }
     }
 
-    /* -------- Prepare emits (URI Remit → treasury → seller) -------- */
+    /* -------- Prepare emits (URI Remit -> treasury -> seller -> remainder) -------- */
     uint8_t uri_txn[384];
     uint32_t uri_len = 0;
     uint8_t treas_txn[512];
     uint32_t treas_len = 0;
     uint8_t seller_txn[512];
     uint32_t seller_len = 0;
+    uint8_t rmd_txn[512];
+    uint32_t rmd_len = 0;
 
     /* C01: skip legs already durable-success (retry) */
     uint8_t uok_f = 0, tpay_f = 0, spay_f = 0;
@@ -1969,6 +2274,9 @@ int64_t hook(uint32_t reserved)
                     == 1 && tpay_f) ? 1 : 0;
     int has_spay = (state_foreign(&spay_f, 1, "SPAY", 4, aid, 32, hook_acc, 20)
                     == 1 && spay_f) ? 1 : 0;
+    uint8_t wpay_f = 0;
+    int has_wpay = (state_foreign(&wpay_f, 1, "WPAY", 4, aid, 32, hook_acc, 20)
+                    == 1 && wpay_f) ? 1 : 0;
     if (has_uok)
         need_uri = 0;
 
@@ -1988,8 +2296,10 @@ int64_t hook(uint32_t reserved)
             emit_seller = 1;
     }
 
+    int emit_rmd = (has_bids && has_rmd && !has_wpay) ? 1 : 0;
+
     {
-        int emit_n = emit_uri + emit_treas + emit_seller;
+        int emit_n = emit_uri + emit_treas + emit_seller + emit_rmd;
         if (emit_n > 0)
         {
             if (etxn_reserve(emit_n) != emit_n)
@@ -1997,7 +2307,7 @@ int64_t hook(uint32_t reserved)
         }
     }
 
-    /* URI Remit → WIN (timed with bids) or seller (timed no bids) */
+    /* URI Remit -> WIN (timed with bids) or seller (timed no bids) */
     if (need_uri)
     {
         uint8_t* uri_dest = has_bids ? win : seller;
@@ -2345,6 +2655,115 @@ int64_t hook(uint32_t reserved)
         }
     }
 
+    /* Max bid: remainder (HIGH - price) back to WIN, DT from WDT */
+    if (emit_rmd)
+    {
+        if (is_iou)
+        {
+            /* Guard budget: zero only the fixed header (bytes 0..119).
+             * etxn_details and the Amounts block write every byte after. */
+            {
+                volatile uint64_t* zq = (volatile uint64_t*)rmd_txn;
+                int z;
+                for (z = 0; GUARD(15), z < 15; ++z)
+                    zq[z] = 0ULL;
+            }
+            rmd_txn[0] = 0x12U;
+            rmd_txn[1] = 0x00U;
+            rmd_txn[2] = 0x5FU;
+            rmd_txn[3] = 0x22U;
+            rmd_txn[4] = 0x80U;
+            rmd_txn[5] = 0x00U;
+            rmd_txn[6] = 0x00U;
+            rmd_txn[7] = 0x00U;
+            rmd_txn[8] = 0x24U;
+            rmd_txn[9] = 0x00U;
+            rmd_txn[10] = 0x00U;
+            rmd_txn[11] = 0x00U;
+            rmd_txn[12] = 0x00U;
+            rmd_txn[13] = 0x2EU;
+            rmd_txn[14] = (uint8_t)((rmd_tag >> 24) & 0xFFU);
+            rmd_txn[15] = (uint8_t)((rmd_tag >> 16) & 0xFFU);
+            rmd_txn[16] = (uint8_t)((rmd_tag >> 8) & 0xFFU);
+            rmd_txn[17] = (uint8_t)(rmd_tag & 0xFFU);
+            rmd_txn[18] = 0x20U;
+            rmd_txn[19] = 0x1AU;
+            rmd_txn[24] = 0x20U;
+            rmd_txn[25] = 0x1BU;
+            rmd_txn[30] = 0x68U;
+            rmd_txn[31] = 0x40U;
+            rmd_txn[39] = 0x73U;
+            rmd_txn[40] = 0x21U;
+            rmd_txn[74] = 0x81U;
+            rmd_txn[75] = 0x14U;
+            rmd_txn[96] = 0x83U;
+            rmd_txn[97] = 0x14U;
+            {
+                uint32_t fls = (uint32_t)ledger_seq() + 1U;
+                rmd_txn[20] = (uint8_t)((fls >> 24) & 0xFFU);
+                rmd_txn[21] = (uint8_t)((fls >> 16) & 0xFFU);
+                rmd_txn[22] = (uint8_t)((fls >> 8) & 0xFFU);
+                rmd_txn[23] = (uint8_t)(fls & 0xFFU);
+                uint32_t lls = fls + 4U;
+                rmd_txn[26] = (uint8_t)((lls >> 24) & 0xFFU);
+                rmd_txn[27] = (uint8_t)((lls >> 16) & 0xFFU);
+                rmd_txn[28] = (uint8_t)((lls >> 8) & 0xFFU);
+                rmd_txn[29] = (uint8_t)(lls & 0xFFU);
+            }
+            *(uint64_t*)(rmd_txn + 76) = *(uint64_t*)(hook_acc);
+            *(uint64_t*)(rmd_txn + 84) = *(uint64_t*)(hook_acc + 8);
+            *(uint32_t*)(rmd_txn + 92) = *(uint32_t*)(hook_acc + 16);
+            *(uint64_t*)(rmd_txn + 98) = *(uint64_t*)(win);
+            *(uint64_t*)(rmd_txn + 106) = *(uint64_t*)(win + 8);
+            *(uint32_t*)(rmd_txn + 114) = *(uint32_t*)(win + 16);
+            {
+                int64_t edlen = etxn_details(rmd_txn + 118, 160U);
+                if (edlen < 105)
+                    NOPE("remainder Remit details failed");
+                uint8_t* p = rmd_txn + 118 + (uint32_t)edlen;
+                *p++ = 0xF0U;
+                *p++ = 0x5CU;
+                *p++ = 0xE0U;
+                *p++ = 0x5BU;
+                if (float_sto((uint32_t)p, 49,
+                              (uint32_t)currency, 20,
+                              (uint32_t)issuer, 20,
+                              rmd_xfl, sfAmount) != 49)
+                    NOPE("remainder IOU encode failed");
+                p += 49;
+                *p++ = 0xE1U;
+                *p++ = 0xF1U;
+                rmd_len = (uint32_t)(p - rmd_txn);
+            }
+            {
+                int64_t fee = etxn_fee_base(rmd_txn, rmd_len);
+                if (fee < 0)
+                    NOPE("remainder Remit fee quote failed");
+                {
+                    uint8_t* b = rmd_txn + 31;
+                    *b++ = (uint8_t)(0b01000000 + ((fee >> 56) & 0b00111111));
+                    *b++ = (uint8_t)((fee >> 48) & 0xFFU);
+                    *b++ = (uint8_t)((fee >> 40) & 0xFFU);
+                    *b++ = (uint8_t)((fee >> 32) & 0xFFU);
+                    *b++ = (uint8_t)((fee >> 24) & 0xFFU);
+                    *b++ = (uint8_t)((fee >> 16) & 0xFFU);
+                    *b++ = (uint8_t)((fee >> 8) & 0xFFU);
+                    *b++ = (uint8_t)((fee >> 0) & 0xFFU);
+                }
+            }
+            if (rmd_len == 0 || rmd_len > 512U)
+                NOPE("remainder Remit build failed");
+        }
+        else
+        {
+            uint32_t sz = 0;
+            PREPARE_PAYMENT_SIMPLE(rmd_txn, rmd_drops, win, rmd_tag, 0, sz);
+            rmd_len = sz;
+            if (rmd_len == 0 || rmd_len > 512U)
+                NOPE("remainder Payment build failed");
+        }
+    }
+
     /* C01: zero builds for already-paid legs */
     if (!emit_uri)
     {
@@ -2356,7 +2775,7 @@ int64_t hook(uint32_t reserved)
     if (!emit_seller)
         seller_len = 0;
 
-    /* -------- Emit → SMAP (URI → treasury → seller); commit in cbak -------- */
+    /* -------- Emit -> SMAP (URI -> treasury -> seller -> remainder); commit in cbak -------- */
     {
         uint8_t emitting = 0;
         if (emit_uri)
@@ -2365,6 +2784,8 @@ int64_t hook(uint32_t reserved)
             emitting = (uint8_t)(emitting | SPEN_BIT_TREAS);
         if (emit_seller)
             emitting = (uint8_t)(emitting | SPEN_BIT_SELL);
+        if (emit_rmd)
+            emitting = (uint8_t)(emitting | SPEN_BIT_RMD);
         /* SEXP = durable full expected (union); SPEN = this invoke only */
         {
             uint8_t sexp = 0;
@@ -2466,16 +2887,63 @@ int64_t hook(uint32_t reserved)
                 NOPE("seller SMAP write failed");
         }
     }
+    if (rmd_len > 0)
+    {
+        uint8_t emh[32];
+        if (emit(SBUF(emh), rmd_txn, rmd_len) != 32)
+            NOPE("remainder emit failed");
+        {
+            /* 72-byte buffer, 67 bytes stored. Word copies keep the
+             * guard budget small. */
+            uint8_t sm[72];
+            {
+                uint64_t* sq = (uint64_t*)sm;
+                uint64_t* aq = (uint64_t*)aid;
+                sq[0] = aq[0];
+                sq[1] = aq[1];
+                sq[2] = aq[2];
+                sq[3] = aq[3];
+                sq[4] = 0ULL;
+                sq[5] = 0ULL;
+                sq[6] = 0ULL;
+                sq[7] = 0ULL;
+                sq[8] = 0ULL;
+            }
+            sm[32] = (uint8_t)SMAP_KIND_RMD;
+            sm[33] = is_iou ? SMAP_IS_IOU : 0;
+            if (rmd_has_wdt)
+            {
+                sm[33] = (uint8_t)(sm[33] | SMAP_HAS_WDT);
+                UINT32_TO_BUF(sm + 62, rmd_tag);
+            }
+            if (is_iou)
+            {
+                uint8_t* ap = sm + 34;
+                UINT64_TO_BUF(ap, (uint64_t)rmd_xfl);
+            }
+            else
+            {
+                uint8_t* ap = sm + 34;
+                UINT64_TO_BUF(ap, rmd_drops);
+            }
+            *(uint64_t*)(sm + 42) = *(uint64_t*)(win);
+            *(uint64_t*)(sm + 50) = *(uint64_t*)(win + 8);
+            *(uint32_t*)(sm + 58) = *(uint32_t*)(win + 16);
+            if (state_set(sm, 67, SBUF(emh)) != 67)
+                NOPE("remainder SMAP write failed");
+        }
+    }
 
-    /* Nothing to emit and already fully flagged → commit now (rare) */
+    /* Nothing to emit and already fully flagged -> commit now (rare) */
     {
         uint8_t sp = 0;
         int busy = (state_foreign(&sp, 1, "SPEN", 4, aid, 32, hook_acc, 20) == 1
                     && sp != 0);
-        if (!busy && !emit_uri && treas_len == 0 && seller_len == 0)
+        if (!busy && !emit_uri && treas_len == 0 && seller_len == 0
+            && rmd_len == 0)
             NOPE("nothing to settle");
     }
 
-    /* Do NOT LCK-/ACTIVE-/clear AID here — cbak commit (C01) */
+    /* Do NOT LCK-/ACTIVE-/clear AID here - cbak commit (C01) */
     DONE("Settlement pending");
 }

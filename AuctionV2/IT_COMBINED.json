@@ -1,9 +1,9 @@
 {
-  "when": "2026-10-05T10:05:47.202Z",
+  "when": "2026-10-07T13:14:05.940Z",
   "networkId": 21338,
   "ws": "wss://xahau-test.net",
   "branding": "Handy Hooks ~ Auction House V2",
-  "namespace": "AEFFD4B07F38CDD57C54228343FDFB59412C3F3E5B9627815D8B5169506DF51D",
+  "namespace": "3E4C2AE9ADCD80EC50B2CF4BBF107CFD4F300316B382A04196D95A69878FB3CE",
   "wasm": {
     "Sub": {
       "bytes": 9149,
@@ -14,57 +14,57 @@
       "hash": "D1D4BFCA240733EF3E00AB04E74481697D2C67C552A2994911732CC822869342"
     },
     "Bids": {
-      "bytes": 18399,
-      "hash": "8E5085A30AADFA0554A237442782299AEBDD03BCEF83B27CBBDCB55201F9497A"
+      "bytes": 22984,
+      "hash": "F73BCBF899147F512DB4768546DE75AED84235F3E4BA9D50C04BB460AAFF6832"
     },
     "Finalise": {
-      "bytes": 25813,
-      "hash": "5D1651156BC4348C8F0CF683AB22698AE7CFD556E1A13F10AA986A5A17619E2A"
+      "bytes": 31464,
+      "hash": "D9881023127345F3DAFAC09744F6BE6952500EAF230FF0DC1A8FC28D0E66CC06"
     }
   },
   "accounts": {
-    "host": "rvJQByWCa2oQsSbpu3DxfUuGYA3xusaZy",
-    "admin": "rwZbvPK4N7ySMyD9oFpSUkxucZNWn2EoEq",
-    "seller": "rfjCU6ZYSUBjaZSCPSsEwoFVdVNgYKenKt",
-    "bidderA": "r3xBp5YXRBQH2iP86crYDscmRwKyEswx2s",
-    "bidderB": "rp8ww5krY7hDDRXz4pFqwUA6FCK14DN1aA",
-    "bidderC": "rp24iVjtpQ7Fnif9BFFGYRcvc9uHpTZGZM",
-    "treasury": "rHzrMYwfcCjPfSS5QM7H5ajZ4KNHLM2ccx",
-    "bank": "rfjmXqStPPX6LG1sr5KaCW8jowsPKJaCDD"
+    "host": "rMw9AFYX94f4ZU8UhAhtphrVcwPXZ11BTe",
+    "admin": "rQny1eqQy2NZzi2ztWq3YLfahbQhmTttXU",
+    "seller": "rsxhvRuQT2ZQtLpT3T1njpGw4wL4C2yKvT",
+    "bidderA": "rUFrEEqPkXyg9F2YvbQfoZaUfnsQVJYY9v",
+    "bidderB": "rQpaaE8qTE3sywY5FCjBiqNQidQv1tfve7",
+    "bidderC": "ra5S9n8djWDSNQMRX1zHbiMnVWPJqbLTER",
+    "treasury": "rsd3cbMDJAAsGpCFGEA6fXeLEiCn2Zpj1m",
+    "bank": "rE2LDpvaTyaWtS5kWQgYv2TCq1CuQmg5nS"
   },
   "txs": {
-    "setHook": "62BC897DC52680AFC1A1755894064E8EB12551309EF190075A24E9FDF4576D8F",
-    "admin_SUBPRICE": "C2063D4E379250DBA6E4FA68FE3D43EC83CB5A6AAB28A7C38986E2F403647BF7",
-    "admin_SUBPERIOD": "940FCF08F7872322215DD933A6278E915FD19D6F780E50F1BC0630ED4AB75D5D",
-    "admin_SUBSPLIT": "433867111544E84D127DD9EA9A3CA2BF295B1572B94B56EE597B42737E9E5A59",
-    "admin_AUCCAP": "9F3BAC4ECA32AEA507590699784AD24208C2860195DD6571399BC7F5DEB89E22",
-    "admin_TREASURY": "4ACFEBF28CC886D90AA1CF0632CBC15FF26754F403B1FB8F509ABD74E96BD038",
-    "admin_FEE": "9FD761DAC86BDCA7AD3B01D89F3C29972650AB8F8CBCCD3056132180DC900AB1",
-    "sellerSub": "BAFBAB9BFF31D86D09E0DC9FD279D26939DB5756D09E59CD8D014D2DC05A8429",
-    "subAidReject": "879EEA83433ADA19B2459C1DFEC16DFFC1E5513B8135C9B7B74C27F54F30A373",
-    "bnMint": "AF1BBAB992585306A1309B8D528FE748A2ACA24CA282D2E337B6B17D94C24691",
-    "bnCreate": "05DA049198F90D828853EE197F865409F2DD81DA15C13F61EDE062137D88081B",
-    "bnAid": "40C05B502262A573F38AF4BC9EA9A4D93CFF6C11724DEC4B54FB46901999BD15",
-    "bnBuyNow": "10A06876FD19866891473BF4E75E2B918C8AA474C69FA33F60A6744EC2DDA328",
-    "bnFinalise": "6A458A2CB3E121B506B6B05F73C004597783FA167F055A378460EA76349A5F49",
-    "strandCreate": "2376542325EA51F6B737015056F6DCC5574F73E25FD9B9F0A0881CEBCFB4DF70",
-    "strandBidA": "1CEE6420262F1E9523A382275B7736009BAE95218C49BF848FCCAA43DB48E320",
-    "strandDepositAuth": "080DBA1550D095CFF1EC95831F0CF497EDA59017F2260706F81FB4A9EBE16368",
-    "strandBidB": "9A36C0FE1636FA4FF0B43322E648C52A0F99F74C160E235D488866B7C46B8937",
-    "strandBidC": "8360BD76D6D7F65A1435177485DB8B192E615CBA69F15309AE639EE306481188",
-    "strandClearDepositAuth": "56244171D687F5DF9BB0F52215105D6ACA42C61C011A55598DDDC14D820D4A89",
-    "strandClaim": "8FF379A4D7412F15E508FFF5CFD085E537B4B6750C19F6082B83D9F7DBC0FE55",
-    "strandBuyNow": "1D8E9E84A8330D9C57006F3FC480BBF9909DFE4511A19864C4D96A9C25866F56",
-    "strandFinalise": "5FDB2C5B0119026F43626197EFB0298370793C1B721A5E388B1361E4B6DD92AD",
-    "cancelCreate": "EB5F205321BEEDE0D4477D210FBC1FDF09E7D59C85AD774090873A1B2FD44D59",
-    "cancelInvoke": "918E582EEB1FAAE05987207728A77D78B17630E9C463921EE505719EF9235B4A"
+    "setHook": "D4426843E0FEBD236AA377BF564200370C6D269F0299C28579C147BEF4B5EF7B",
+    "admin_SUBPRICE": "3D35C05FD009A1B6FC500EE27C6144C378CB79051FAA934B172E4EDCFD89385E",
+    "admin_SUBPERIOD": "A223A7D6D7900F60F56E9F7BD327DAE24992C119C917A99E100A25BA7B71B4AE",
+    "admin_SUBSPLIT": "669F0C7C9688FCCC5665D21C975A6E665F959F2D0C352AF6B29F58D5D507D46B",
+    "admin_AUCCAP": "E86299D797C0D5F705274F642DF6E70ADB5DC9814C62B9660BF84071F0CDA749",
+    "admin_TREASURY": "FD6518ACAA3C275B204B1B2EA430FE04C55BB95C07631062E5CB6C5133521509",
+    "admin_FEE": "138DFB52B60C6C24D78E6EF5BBE36101C3DE244D32F9AD96ECFC6F1B6A4F4092",
+    "sellerSub": "D6E906B2E0882787543E08B36E39E44056857E9C1DDE7C282A4632B9EC635201",
+    "subAidReject": "24502C9649B393D4A30ABAE730B1B4FC373DAAEB675498A6D81B246D444977F5",
+    "bnMint": "9CD95654BD2E6DB04E3B975C457796D6F692E4F351A37768857FB7E5FD8000D2",
+    "bnCreate": "C79D54B5E668A7373679797710EB19DAA59B4CA1C8B5D4550570BD7DFB85FD94",
+    "bnAid": "4E651FD152F50997037A1DDFE6029BD8C55C2C8324318649595B9F59247DFB1E",
+    "bnBuyNow": "1193D3D6EC7C56393AB0830654C15653FA33AFC3E3857994866D95B5B6559C80",
+    "bnFinalise": "B243DC0E18A2AEED63C9AD03A916E05E31951552BD5C90174AD7E53AF3D2C7FA",
+    "strandCreate": "E24CF66A87D23B7472C38ED930CDBF47FDEFEB5CDBBA23B524F2F68072F3EA88",
+    "strandBidA": "86A180E192D9CCE3D749473802ABF7F64A0D7EFE072010404084DE56E13E5F07",
+    "strandDepositAuth": "110532E20CD46A6EEE6E788E922E5EEE56B99C18951EDC41DFD76C7C6D24E115",
+    "strandBidB": "D26CDC42AB95647E068A7ECCC795E9EA10C3641AF9A1FDA2E94270BE6443AF98",
+    "strandBidC": "DF1D978C24F6E3D3890EA15DB5182C3E57307D54E21D966A6A002913191ED35E",
+    "strandClearDepositAuth": "D8F4460D8F431ACD579F691A9DD6AD442C574382553941078E247D16C10119E1",
+    "strandClaim": "E1093F88E4D2E151D50037196DDDD50CF26D9909BA9E79506DA8034682C561F6",
+    "strandBuyNow": "82D1D96B085DAAD4ABE5970D05944486C9F24C7982854C03CC0024D6D6931234",
+    "strandFinalise": "6C8466E906826055E55C00B05B0CBDFAA264900F0FF494D7B253B01357833813",
+    "cancelCreate": "945717A6227F8CEC6431424D6272D576CE3E0D07D8071E618B926F15F4D8C85F",
+    "cancelInvoke": "8FE0E722DA90BBB0A30E27DC0815DC935668B67694D203430B349F95475192C0"
   },
   "cases": [
     {
       "name": "onehost_sethook",
       "pass": true,
       "engine": "tesSUCCESS",
-      "hash": "62BC897DC52680AFC1A1755894064E8EB12551309EF190075A24E9FDF4576D8F",
+      "hash": "D4426843E0FEBD236AA377BF564200370C6D269F0299C28579C147BEF4B5EF7B",
       "gotMsg": "",
       "want": {
         "engine": "tesSUCCESS"
@@ -75,7 +75,7 @@
       "name": "onehost_admin_SUBPRICE",
       "pass": true,
       "engine": "tesSUCCESS",
-      "hash": "C2063D4E379250DBA6E4FA68FE3D43EC83CB5A6AAB28A7C38986E2F403647BF7",
+      "hash": "3D35C05FD009A1B6FC500EE27C6144C378CB79051FAA934B172E4EDCFD89385E",
       "gotMsg": "SUBPRICE updated | Passthrough | Passthrough | Invoke passthrough",
       "want": {
         "engine": "tesSUCCESS"
@@ -97,17 +97,17 @@
         },
         {
           "result": 3,
-          "code": "34f",
+          "code": "356",
           "msg": "Passthrough",
           "emit": 0,
-          "hash": "8E5085A30AADFA0554A237442782299AEBDD03BCEF83B27CBBDCB55201F9497A"
+          "hash": "F73BCBF899147F512DB4768546DE75AED84235F3E4BA9D50C04BB460AAFF6832"
         },
         {
           "result": 3,
-          "code": "35f",
+          "code": "432",
           "msg": "Invoke passthrough",
           "emit": 0,
-          "hash": "5D1651156BC4348C8F0CF683AB22698AE7CFD556E1A13F10AA986A5A17619E2A"
+          "hash": "D9881023127345F3DAFAC09744F6BE6952500EAF230FF0DC1A8FC28D0E66CC06"
         }
       ]
     },
@@ -115,7 +115,7 @@
       "name": "onehost_admin_SUBPERIOD",
       "pass": true,
       "engine": "tesSUCCESS",
-      "hash": "940FCF08F7872322215DD933A6278E915FD19D6F780E50F1BC0630ED4AB75D5D",
+      "hash": "A223A7D6D7900F60F56E9F7BD327DAE24992C119C917A99E100A25BA7B71B4AE",
       "gotMsg": "SUBPERIOD updated | Passthrough | Passthrough | Invoke passthrough",
       "want": {
         "engine": "tesSUCCESS"
@@ -137,17 +137,17 @@
         },
         {
           "result": 3,
-          "code": "34f",
+          "code": "356",
           "msg": "Passthrough",
           "emit": 0,
-          "hash": "8E5085A30AADFA0554A237442782299AEBDD03BCEF83B27CBBDCB55201F9497A"
+          "hash": "F73BCBF899147F512DB4768546DE75AED84235F3E4BA9D50C04BB460AAFF6832"
         },
         {
           "result": 3,
-          "code": "35f",
+          "code": "432",
           "msg": "Invoke passthrough",
           "emit": 0,
-          "hash": "5D1651156BC4348C8F0CF683AB22698AE7CFD556E1A13F10AA986A5A17619E2A"
+          "hash": "D9881023127345F3DAFAC09744F6BE6952500EAF230FF0DC1A8FC28D0E66CC06"
         }
       ]
     },
@@ -155,7 +155,7 @@
       "name": "onehost_admin_SUBSPLIT",
       "pass": true,
       "engine": "tesSUCCESS",
-      "hash": "433867111544E84D127DD9EA9A3CA2BF295B1572B94B56EE597B42737E9E5A59",
+      "hash": "669F0C7C9688FCCC5665D21C975A6E665F959F2D0C352AF6B29F58D5D507D46B",
       "gotMsg": "SUBSPLIT updated | Passthrough | Passthrough | Invoke passthrough",
       "want": {
         "engine": "tesSUCCESS"
@@ -177,17 +177,17 @@
         },
         {
           "result": 3,
-          "code": "34f",
+          "code": "356",
           "msg": "Passthrough",
           "emit": 0,
-          "hash": "8E5085A30AADFA0554A237442782299AEBDD03BCEF83B27CBBDCB55201F9497A"
+          "hash": "F73BCBF899147F512DB4768546DE75AED84235F3E4BA9D50C04BB460AAFF6832"
         },
         {
           "result": 3,
-          "code": "35f",
+          "code": "432",
           "msg": "Invoke passthrough",
           "emit": 0,
-          "hash": "5D1651156BC4348C8F0CF683AB22698AE7CFD556E1A13F10AA986A5A17619E2A"
+          "hash": "D9881023127345F3DAFAC09744F6BE6952500EAF230FF0DC1A8FC28D0E66CC06"
         }
       ]
     },
@@ -195,7 +195,7 @@
       "name": "onehost_admin_AUCCAP",
       "pass": true,
       "engine": "tesSUCCESS",
-      "hash": "9F3BAC4ECA32AEA507590699784AD24208C2860195DD6571399BC7F5DEB89E22",
+      "hash": "E86299D797C0D5F705274F642DF6E70ADB5DC9814C62B9660BF84071F0CDA749",
       "gotMsg": "AUCCAP updated | Passthrough | Passthrough | Invoke passthrough",
       "want": {
         "engine": "tesSUCCESS"
@@ -217,17 +217,17 @@
         },
         {
           "result": 3,
-          "code": "34f",
+          "code": "356",
           "msg": "Passthrough",
           "emit": 0,
-          "hash": "8E5085A30AADFA0554A237442782299AEBDD03BCEF83B27CBBDCB55201F9497A"
+          "hash": "F73BCBF899147F512DB4768546DE75AED84235F3E4BA9D50C04BB460AAFF6832"
         },
         {
           "result": 3,
-          "code": "35f",
+          "code": "432",
           "msg": "Invoke passthrough",
           "emit": 0,
-          "hash": "5D1651156BC4348C8F0CF683AB22698AE7CFD556E1A13F10AA986A5A17619E2A"
+          "hash": "D9881023127345F3DAFAC09744F6BE6952500EAF230FF0DC1A8FC28D0E66CC06"
         }
       ]
     },
@@ -235,7 +235,7 @@
       "name": "onehost_admin_TREASURY",
       "pass": true,
       "engine": "tesSUCCESS",
-      "hash": "4ACFEBF28CC886D90AA1CF0632CBC15FF26754F403B1FB8F509ABD74E96BD038",
+      "hash": "FD6518ACAA3C275B204B1B2EA430FE04C55BB95C07631062E5CB6C5133521509",
       "gotMsg": "TREASURY updated | Passthrough | Passthrough | Invoke passthrough",
       "want": {
         "engine": "tesSUCCESS"
@@ -257,17 +257,17 @@
         },
         {
           "result": 3,
-          "code": "34f",
+          "code": "356",
           "msg": "Passthrough",
           "emit": 0,
-          "hash": "8E5085A30AADFA0554A237442782299AEBDD03BCEF83B27CBBDCB55201F9497A"
+          "hash": "F73BCBF899147F512DB4768546DE75AED84235F3E4BA9D50C04BB460AAFF6832"
         },
         {
           "result": 3,
-          "code": "35f",
+          "code": "432",
           "msg": "Invoke passthrough",
           "emit": 0,
-          "hash": "5D1651156BC4348C8F0CF683AB22698AE7CFD556E1A13F10AA986A5A17619E2A"
+          "hash": "D9881023127345F3DAFAC09744F6BE6952500EAF230FF0DC1A8FC28D0E66CC06"
         }
       ]
     },
@@ -275,7 +275,7 @@
       "name": "onehost_admin_FEE",
       "pass": true,
       "engine": "tesSUCCESS",
-      "hash": "9FD761DAC86BDCA7AD3B01D89F3C29972650AB8F8CBCCD3056132180DC900AB1",
+      "hash": "138DFB52B60C6C24D78E6EF5BBE36101C3DE244D32F9AD96ECFC6F1B6A4F4092",
       "gotMsg": "FEE updated | Passthrough | Passthrough | Invoke passthrough",
       "want": {
         "engine": "tesSUCCESS"
@@ -297,17 +297,17 @@
         },
         {
           "result": 3,
-          "code": "34f",
+          "code": "356",
           "msg": "Passthrough",
           "emit": 0,
-          "hash": "8E5085A30AADFA0554A237442782299AEBDD03BCEF83B27CBBDCB55201F9497A"
+          "hash": "F73BCBF899147F512DB4768546DE75AED84235F3E4BA9D50C04BB460AAFF6832"
         },
         {
           "result": 3,
-          "code": "35f",
+          "code": "432",
           "msg": "Invoke passthrough",
           "emit": 0,
-          "hash": "5D1651156BC4348C8F0CF683AB22698AE7CFD556E1A13F10AA986A5A17619E2A"
+          "hash": "D9881023127345F3DAFAC09744F6BE6952500EAF230FF0DC1A8FC28D0E66CC06"
         }
       ]
     },
@@ -315,7 +315,7 @@
       "name": "onehost_seller_sub",
       "pass": true,
       "engine": "tesSUCCESS",
-      "hash": "BAFBAB9BFF31D86D09E0DC9FD279D26939DB5756D09E59CD8D014D2DC05A8429",
+      "hash": "D6E906B2E0882787543E08B36E39E44056857E9C1DDE7C282A4632B9EC635201",
       "gotMsg": "Subscription active | Passthrough | Payment passthrough",
       "want": {
         "engine": "tesSUCCESS",
@@ -339,10 +339,10 @@
         },
         {
           "result": 3,
-          "code": "366",
+          "code": "36d",
           "msg": "Payment passthrough",
           "emit": 0,
-          "hash": "8E5085A30AADFA0554A237442782299AEBDD03BCEF83B27CBBDCB55201F9497A"
+          "hash": "F73BCBF899147F512DB4768546DE75AED84235F3E4BA9D50C04BB460AAFF6832"
         }
       ]
     },
@@ -350,7 +350,7 @@
       "name": "onehost_sub_aid_reject",
       "pass": true,
       "engine": "tecHOOK_REJECTED",
-      "hash": "879EEA83433ADA19B2459C1DFEC16DFFC1E5513B8135C9B7B74C27F54F30A373",
+      "hash": "24502C9649B393D4A30ABAE730B1B4FC373DAAEB675498A6D81B246D444977F5",
       "gotMsg": "SUB and AID both set",
       "want": {
         "engine": "tecHOOK_REJECTED",
@@ -361,7 +361,7 @@
       "name": "onehost_bn_create",
       "pass": true,
       "engine": "tesSUCCESS",
-      "hash": "05DA049198F90D828853EE197F865409F2DD81DA15C13F61EDE062137D88081B",
+      "hash": "C79D54B5E668A7373679797710EB19DAA59B4CA1C8B5D4550570BD7DFB85FD94",
       "gotMsg": "Auction created | Passthrough",
       "want": {
         "engine": "tesSUCCESS",
@@ -377,10 +377,10 @@
         },
         {
           "result": 3,
-          "code": "352",
+          "code": "359",
           "msg": "Passthrough",
           "emit": 0,
-          "hash": "8E5085A30AADFA0554A237442782299AEBDD03BCEF83B27CBBDCB55201F9497A"
+          "hash": "F73BCBF899147F512DB4768546DE75AED84235F3E4BA9D50C04BB460AAFF6832"
         }
       ]
     },
@@ -398,7 +398,7 @@
       "name": "onehost_bn_buynow",
       "pass": true,
       "engine": "tesSUCCESS",
-      "hash": "10A06876FD19866891473BF4E75E2B918C8AA474C69FA33F60A6744EC2DDA328",
+      "hash": "1193D3D6EC7C56393AB0830654C15653FA33AFC3E3857994866D95B5B6559C80",
       "gotMsg": "Payment passthrough | Passthrough | Buy-now accepted",
       "want": {
         "engine": "tesSUCCESS",
@@ -422,10 +422,10 @@
         },
         {
           "result": 3,
-          "code": "699",
+          "code": "746",
           "msg": "Buy-now accepted",
           "emit": 1,
-          "hash": "8E5085A30AADFA0554A237442782299AEBDD03BCEF83B27CBBDCB55201F9497A"
+          "hash": "F73BCBF899147F512DB4768546DE75AED84235F3E4BA9D50C04BB460AAFF6832"
         }
       ]
     },
@@ -435,14 +435,14 @@
       "engine": "ok",
       "gotMsg": "URI to winner",
       "want": {
-        "owner": "r3xBp5YXRBQH2iP86crYDscmRwKyEswx2s"
+        "owner": "rUFrEEqPkXyg9F2YvbQfoZaUfnsQVJYY9v"
       }
     },
     {
       "name": "onehost_bn_finalise",
       "pass": true,
       "engine": "tesSUCCESS",
-      "hash": "6A458A2CB3E121B506B6B05F73C004597783FA167F055A378460EA76349A5F49",
+      "hash": "B243DC0E18A2AEED63C9AD03A916E05E31951552BD5C90174AD7E53AF3D2C7FA",
       "gotMsg": "Invoke passthrough | Passthrough | Passthrough | Settlement pending",
       "want": {
         "engine": "tesSUCCESS",
@@ -466,17 +466,17 @@
         },
         {
           "result": 3,
-          "code": "34f",
+          "code": "356",
           "msg": "Passthrough",
           "emit": 0,
-          "hash": "8E5085A30AADFA0554A237442782299AEBDD03BCEF83B27CBBDCB55201F9497A"
+          "hash": "F73BCBF899147F512DB4768546DE75AED84235F3E4BA9D50C04BB460AAFF6832"
         },
         {
           "result": 3,
-          "code": "9b0",
+          "code": "b84",
           "msg": "Settlement pending",
           "emit": 2,
-          "hash": "5D1651156BC4348C8F0CF683AB22698AE7CFD556E1A13F10AA986A5A17619E2A"
+          "hash": "D9881023127345F3DAFAC09744F6BE6952500EAF230FF0DC1A8FC28D0E66CC06"
         }
       ]
     },
@@ -484,7 +484,7 @@
       "name": "onehost_bn_settle_asserts",
       "pass": true,
       "engine": "ok",
-      "gotMsg": "{\"aidCleared\":true,\"emit\":2,\"treasDelta\":\"250000\",\"sellerDelta\":\"4619603\"}",
+      "gotMsg": "{\"aidCleared\":true,\"emit\":2,\"treasDelta\":\"250000\",\"sellerDelta\":\"4615485\"}",
       "want": {
         "cleared": true,
         "emit": ">=2",
@@ -496,7 +496,7 @@
       "name": "onehost_strand_create",
       "pass": true,
       "engine": "tesSUCCESS",
-      "hash": "2376542325EA51F6B737015056F6DCC5574F73E25FD9B9F0A0881CEBCFB4DF70",
+      "hash": "E24CF66A87D23B7472C38ED930CDBF47FDEFEB5CDBBA23B524F2F68072F3EA88",
       "gotMsg": "Auction created | Passthrough",
       "want": {
         "engine": "tesSUCCESS",
@@ -512,10 +512,10 @@
         },
         {
           "result": 3,
-          "code": "352",
+          "code": "359",
           "msg": "Passthrough",
           "emit": 0,
-          "hash": "8E5085A30AADFA0554A237442782299AEBDD03BCEF83B27CBBDCB55201F9497A"
+          "hash": "F73BCBF899147F512DB4768546DE75AED84235F3E4BA9D50C04BB460AAFF6832"
         }
       ]
     },
@@ -523,11 +523,11 @@
       "name": "onehost_strand_bid_A",
       "pass": true,
       "engine": "tesSUCCESS",
-      "hash": "1CEE6420262F1E9523A382275B7736009BAE95218C49BF848FCCAA43DB48E320",
-      "gotMsg": "Payment passthrough | Passthrough | Bid accepted",
+      "hash": "86A180E192D9CCE3D749473802ABF7F64A0D7EFE072010404084DE56E13E5F07",
+      "gotMsg": "Payment passthrough | Passthrough | Max bid accepted",
       "want": {
         "engine": "tesSUCCESS",
-        "msgIncludes": "Bid accepted",
+        "msgIncludes": "Max bid accepted",
         "bidsOnly": true
       },
       "hrs": [
@@ -547,10 +547,10 @@
         },
         {
           "result": 3,
-          "code": "69e",
-          "msg": "Bid accepted",
+          "code": "74f",
+          "msg": "Max bid accepted",
           "emit": 0,
-          "hash": "8E5085A30AADFA0554A237442782299AEBDD03BCEF83B27CBBDCB55201F9497A"
+          "hash": "F73BCBF899147F512DB4768546DE75AED84235F3E4BA9D50C04BB460AAFF6832"
         }
       ]
     },
@@ -558,7 +558,7 @@
       "name": "onehost_strand_set_deposit_auth",
       "pass": true,
       "engine": "tesSUCCESS",
-      "hash": "080DBA1550D095CFF1EC95831F0CF497EDA59017F2260706F81FB4A9EBE16368",
+      "hash": "110532E20CD46A6EEE6E788E922E5EEE56B99C18951EDC41DFD76C7C6D24E115",
       "gotMsg": "",
       "want": {
         "engine": "tesSUCCESS"
@@ -569,11 +569,11 @@
       "name": "onehost_strand_bid_B_outbid",
       "pass": true,
       "engine": "tesSUCCESS",
-      "hash": "9A36C0FE1636FA4FF0B43322E648C52A0F99F74C160E235D488866B7C46B8937",
-      "gotMsg": "Payment passthrough | Passthrough | Bid accepted with prior refund",
+      "hash": "D26CDC42AB95647E068A7ECCC795E9EA10C3641AF9A1FDA2E94270BE6443AF98",
+      "gotMsg": "Payment passthrough | Passthrough | Max bid accepted with prior refund",
       "want": {
         "engine": "tesSUCCESS",
-        "msgIncludes": "Bid accepted",
+        "msgIncludes": "Max bid accepted",
         "bidsOnly": true
       },
       "hrs": [
@@ -593,10 +593,10 @@
         },
         {
           "result": 3,
-          "code": "69d",
-          "msg": "Bid accepted with prior refund",
+          "code": "74c",
+          "msg": "Max bid accepted with prior refund",
           "emit": 1,
-          "hash": "8E5085A30AADFA0554A237442782299AEBDD03BCEF83B27CBBDCB55201F9497A"
+          "hash": "F73BCBF899147F512DB4768546DE75AED84235F3E4BA9D50C04BB460AAFF6832"
         }
       ]
     },
@@ -604,7 +604,7 @@
       "name": "onehost_strand_state_after_outbid",
       "pass": true,
       "engine": "ok",
-      "gotMsg": "{\"ST\":\"01\",\"HIGH\":\"00000000002625A0\",\"RFD\":\"000000000016E360\",\"RFDA\":\"573821734DC4BB7237C5DF5BBFF172D681126167\",\"PEN\":null,\"WIN\":\"13827F2CAA5EE1BA1BA3F8D3597EC22DC4E8F2F8\"}",
+      "gotMsg": "{\"ST\":\"01\",\"HIGH\":\"00000000002625A0\",\"RFD\":\"000000000016E360\",\"RFDA\":\"818D2395813A64CC8BEDF5324070C2EB96E5F098\",\"PEN\":null,\"WIN\":\"FC7F8EF3FD917089B9D052241A50A7A46811575B\"}",
       "want": {
         "ST": "01",
         "note": "auction still open; RFD may appear after refund cbak fail"
@@ -614,11 +614,11 @@
       "name": "onehost_strand_bid_C_not_blocked",
       "pass": true,
       "engine": "tesSUCCESS",
-      "hash": "8360BD76D6D7F65A1435177485DB8B192E615CBA69F15309AE639EE306481188",
-      "gotMsg": "{\"msgs\":[\"Bid accepted with prior refund\"],\"preRFD\":\"000000000016E360\",\"prePEN\":null}",
+      "hash": "DF1D978C24F6E3D3890EA15DB5182C3E57307D54E21D966A6A002913191ED35E",
+      "gotMsg": "{\"msgs\":[\"Max bid accepted with prior refund\"],\"preRFD\":\"000000000016E360\",\"prePEN\":null}",
       "want": {
         "engine": "tesSUCCESS",
-        "msg": "Bid accepted",
+        "msg": "Max bid accepted",
         "not": "stranded refund claim first"
       }
     },
@@ -626,7 +626,7 @@
       "name": "onehost_strand_clear_deposit_auth",
       "pass": true,
       "engine": "tesSUCCESS",
-      "hash": "56244171D687F5DF9BB0F52215105D6ACA42C61C011A55598DDDC14D820D4A89",
+      "hash": "D8F4460D8F431ACD579F691A9DD6AD442C574382553941078E247D16C10119E1",
       "gotMsg": "",
       "want": {
         "engine": "tesSUCCESS"
@@ -637,7 +637,7 @@
       "name": "onehost_strand_claim_or_noop",
       "pass": true,
       "engine": "tesSUCCESS",
-      "hash": "8FF379A4D7412F15E508FFF5CFD085E537B4B6750C19F6082B83D9F7DBC0FE55",
+      "hash": "E1093F88E4D2E151D50037196DDDD50CF26D9909BA9E79506DA8034682C561F6",
       "gotMsg": "Invoke passthrough | Passthrough | Passthrough | Stranded refund claimed",
       "want": {
         "note": "claim if stranded; reject/settle otherwise OK"
@@ -647,8 +647,8 @@
       "name": "onehost_strand_close_buynow",
       "pass": true,
       "engine": "tesSUCCESS",
-      "hash": "1D8E9E84A8330D9C57006F3FC480BBF9909DFE4511A19864C4D96A9C25866F56",
-      "gotMsg": "Payment passthrough | Passthrough | Buy-now accepted with prior refund",
+      "hash": "82D1D96B085DAAD4ABE5970D05944486C9F24C7982854C03CC0024D6D6931234",
+      "gotMsg": "Payment passthrough | Passthrough | Buy-now accepted",
       "want": {
         "engine": "tesSUCCESS",
         "msgIncludes": "Buy-now",
@@ -671,10 +671,10 @@
         },
         {
           "result": 3,
-          "code": "698",
-          "msg": "Buy-now accepted with prior refund",
-          "emit": 2,
-          "hash": "8E5085A30AADFA0554A237442782299AEBDD03BCEF83B27CBBDCB55201F9497A"
+          "code": "746",
+          "msg": "Buy-now accepted",
+          "emit": 1,
+          "hash": "F73BCBF899147F512DB4768546DE75AED84235F3E4BA9D50C04BB460AAFF6832"
         }
       ]
     },
@@ -682,7 +682,7 @@
       "name": "onehost_strand_close_finalise",
       "pass": true,
       "engine": "tesSUCCESS",
-      "hash": "5FDB2C5B0119026F43626197EFB0298370793C1B721A5E388B1361E4B6DD92AD",
+      "hash": "6C8466E906826055E55C00B05B0CBDFAA264900F0FF494D7B253B01357833813",
       "gotMsg": "Invoke passthrough | Passthrough | Passthrough | Settlement pending",
       "want": {
         "engine": "tesSUCCESS",
@@ -706,17 +706,17 @@
         },
         {
           "result": 3,
-          "code": "34f",
+          "code": "356",
           "msg": "Passthrough",
           "emit": 0,
-          "hash": "8E5085A30AADFA0554A237442782299AEBDD03BCEF83B27CBBDCB55201F9497A"
+          "hash": "F73BCBF899147F512DB4768546DE75AED84235F3E4BA9D50C04BB460AAFF6832"
         },
         {
           "result": 3,
-          "code": "9b0",
+          "code": "b84",
           "msg": "Settlement pending",
-          "emit": 2,
-          "hash": "5D1651156BC4348C8F0CF683AB22698AE7CFD556E1A13F10AA986A5A17619E2A"
+          "emit": 3,
+          "hash": "D9881023127345F3DAFAC09744F6BE6952500EAF230FF0DC1A8FC28D0E66CC06"
         }
       ]
     },
@@ -733,7 +733,7 @@
       "name": "onehost_cancel_create",
       "pass": true,
       "engine": "tesSUCCESS",
-      "hash": "EB5F205321BEEDE0D4477D210FBC1FDF09E7D59C85AD774090873A1B2FD44D59",
+      "hash": "945717A6227F8CEC6431424D6272D576CE3E0D07D8071E618B926F15F4D8C85F",
       "gotMsg": "Auction created | Passthrough",
       "want": {
         "engine": "tesSUCCESS",
@@ -749,10 +749,10 @@
         },
         {
           "result": 3,
-          "code": "352",
+          "code": "359",
           "msg": "Passthrough",
           "emit": 0,
-          "hash": "8E5085A30AADFA0554A237442782299AEBDD03BCEF83B27CBBDCB55201F9497A"
+          "hash": "F73BCBF899147F512DB4768546DE75AED84235F3E4BA9D50C04BB460AAFF6832"
         }
       ]
     },
@@ -760,7 +760,7 @@
       "name": "onehost_cancel_ok",
       "pass": true,
       "engine": "tesSUCCESS",
-      "hash": "918E582EEB1FAAE05987207728A77D78B17630E9C463921EE505719EF9235B4A",
+      "hash": "8FE0E722DA90BBB0A30E27DC0815DC935668B67694D203430B349F95475192C0",
       "gotMsg": "Invoke passthrough | Passthrough | Passthrough | Cancel pending",
       "want": {
         "engine": "tesSUCCESS",
@@ -784,17 +784,17 @@
         },
         {
           "result": 3,
-          "code": "34f",
+          "code": "356",
           "msg": "Passthrough",
           "emit": 0,
-          "hash": "8E5085A30AADFA0554A237442782299AEBDD03BCEF83B27CBBDCB55201F9497A"
+          "hash": "F73BCBF899147F512DB4768546DE75AED84235F3E4BA9D50C04BB460AAFF6832"
         },
         {
           "result": 3,
-          "code": "474",
+          "code": "54e",
           "msg": "Cancel pending",
           "emit": 1,
-          "hash": "5D1651156BC4348C8F0CF683AB22698AE7CFD556E1A13F10AA986A5A17619E2A"
+          "hash": "D9881023127345F3DAFAC09744F6BE6952500EAF230FF0DC1A8FC28D0E66CC06"
         }
       ]
     },
@@ -805,7 +805,7 @@
       "gotMsg": "{\"aidCleared\":true,\"uriBack\":true}",
       "want": {
         "cleared": true,
-        "owner": "rfjCU6ZYSUBjaZSCPSsEwoFVdVNgYKenKt"
+        "owner": "rsxhvRuQT2ZQtLpT3T1njpGw4wL4C2yKvT"
       }
     },
     {
@@ -821,23 +821,23 @@
   "pass": 30,
   "fail": 0,
   "hostState": {
-    "TAC": "00000003",
-    "TBD": "00000003",
     "FEE": "01F4",
-    "TBN": "00000002"
+    "TBD": "00000003",
+    "TBN": "00000002",
+    "TAC": "00000003"
   },
-  "finished": "2026-10-05T10:09:39.574Z",
+  "finished": "2026-10-07T13:18:41.317Z",
   "summary": {
     "pass": 30,
     "fail": 0,
-    "host": "rvJQByWCa2oQsSbpu3DxfUuGYA3xusaZy",
+    "host": "rMw9AFYX94f4ZU8UhAhtphrVcwPXZ11BTe",
     "networkId": 21338,
-    "namespace": "AEFFD4B07F38CDD57C54228343FDFB59412C3F3E5B9627815D8B5169506DF51D",
+    "namespace": "3E4C2AE9ADCD80EC50B2CF4BBF107CFD4F300316B382A04196D95A69878FB3CE",
     "hookHashes": {
       "Sub": "6F6FD261881A285C9B038B46025809BBC7217E8EE904B914C2ED89EACBDCA68A",
       "Create": "D1D4BFCA240733EF3E00AB04E74481697D2C67C552A2994911732CC822869342",
-      "Bids": "8E5085A30AADFA0554A237442782299AEBDD03BCEF83B27CBBDCB55201F9497A",
-      "Finalise": "5D1651156BC4348C8F0CF683AB22698AE7CFD556E1A13F10AA986A5A17619E2A"
+      "Bids": "F73BCBF899147F512DB4768546DE75AED84235F3E4BA9D50C04BB460AAFF6832",
+      "Finalise": "D9881023127345F3DAFAC09744F6BE6952500EAF230FF0DC1A8FC28D0E66CC06"
     }
   }
 }

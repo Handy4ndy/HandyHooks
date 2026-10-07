@@ -1,8 +1,13 @@
 /**
- * Auction House V2 Finalise — full matrix (xahau.js).
+ * Auction House V2 Finalise - full matrix (xahau.js).
  * Shared HookNamespace: Sub+Create+Bids+Finalise on one host.
  * Covers buy-now claim, timed with/without bids, FEE XAH+IOU, rejects,
  * LCK/ACTIVE/AID-clear asserts.
+ * Max bid (p1_* cases): settle price (PRC, BN fallback), fee on
+ * price, winner remainder leg, remainder strand and claim, claim subtract,
+ * IFR settle gate. PRC/IFR seeded cases run on a second host that also
+ * carries the test-only seed hook (SmokeStateSeed.wasm via SEED_WASM,
+ * op 0x09). Without that file the seeded cases are recorded as skipped.
  *
  * Run: node IT_FINALISE.js
  */
@@ -25,6 +30,17 @@ const WASM_FIN = fs.readFileSync(path.join(OUTDIR, 'AuctionFinalise.wasm'));
 const WASM_BIDS = fs.readFileSync(path.join(ROOT, 'Bids', 'AuctionBids.wasm'));
 const WASM_CREATE = fs.readFileSync(path.join(ROOT, 'Create', 'AuctionCreate.wasm'));
 const WASM_SUB = fs.readFileSync(path.join(ROOT, 'Subscription', 'AuctionSub.wasm'));
+/* Test-only seed hook for the seeded PRC/IFR cases. Set SEED_WASM to its path. */
+const SEED_DEFAULT = path.join(__dirname, '..', '_tools', 'SmokeStateSeed.wasm');
+const SEED_PATH = process.env.SEED_WASM || SEED_DEFAULT;
+if (process.env.SEED_WASM && !fs.existsSync(SEED_PATH)) {
+  throw new Error('SEED_WASM is set but no file exists at ' + SEED_PATH);
+}
+if (!fs.existsSync(SEED_PATH)) {
+  console.error('SEED_WASM not set: seeded PRC/IFR cases need the test seed hook (SmokeStateSeed.wasm) and will be skipped');
+}
+const WASM_SEED = fs.existsSync(SEED_PATH) ? fs.readFileSync(SEED_PATH) : null;
+const ASF_REQUIRE_DEST = 1;
 
 const FIN_HASH = crypto.createHash('sha512').update(WASM_FIN).digest().slice(0, 32).toString('hex').toUpperCase();
 const BIDS_HASH = crypto.createHash('sha512').update(WASM_BIDS).digest().slice(0, 32).toString('hex').toUpperCase();
@@ -45,7 +61,7 @@ const PERIOD = 7200;
 const SPLIT_PCT = 0;
 const AUCCAP = 40;
 const DUR_LONG = 3600;
-const DUR_SHORT = 300; /* min Create DUR — wait for timed paths */
+const DUR_SHORT = 300; /* min Create DUR - wait for timed paths */
 const FEE_BPS = 500; /* 5% */
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -143,9 +159,15 @@ async function faucetWallet() {
   throw last || new Error('faucet failed');
 }
 async function submitAndWait(client, wallet, tx) {
+  /* testnet ws drops: wait for the auto reconnect before submitting */
+  for (let i = 0; i < 60 && !client.isConnected(); i++) await sleep(1000);
   const prepared = await client.autofill({ ...tx, NetworkID: NETWORK_ID });
   const signed = wallet.sign(prepared);
-  const result = await client.submitAndWait(signed.tx_blob);
+  let wd;
+  const result = await Promise.race([
+    client.submitAndWait(signed.tx_blob),
+    new Promise((_, rej) => { wd = setTimeout(() => rej(new Error('submit watchdog 240s ' + signed.hash)), 240000); }),
+  ]).finally(() => clearTimeout(wd));
   const engine = result.result?.meta?.TransactionResult
     || result.result?.engine_result
     || 'unknown';
@@ -376,7 +398,7 @@ async function readAidKeys(client, hostAddr, aid) {
     namespace_id: aid,
     ledger_index: 'validated',
   }).catch(() => null);
-  const want = ['DUR', 'SP', 'MB', 'BN', 'CUR', 'ISS', 'SLR', 'URI', 'EXP', 'ST', 'HIGH', 'WIN', 'BCNT', 'BNW', 'SSF', 'UOK', 'TSF', 'CPR', 'SEXP', 'SPEN', 'TPAY', 'SPAY', 'LCKU', 'PEN', 'FEE', 'TREASURY', 'RFD', 'RFDA', 'RFDT', 'WDT'];
+  const want = ['DUR', 'SP', 'MB', 'BN', 'CUR', 'ISS', 'SLR', 'URI', 'EXP', 'ST', 'HIGH', 'WIN', 'BCNT', 'BNW', 'SSF', 'UOK', 'TSF', 'CPR', 'SEXP', 'SPEN', 'TPAY', 'SPAY', 'LCKU', 'PEN', 'FEE', 'TREASURY', 'RFD', 'RFDA', 'RFDT', 'WDT', 'PRC', 'WPAY', 'IFR'];
   const found = {};
   for (const o of ns?.result?.namespace_entries || []) {
     const k = String(o.HookStateKey || '').toUpperCase();
@@ -496,12 +518,12 @@ async function main() {
     pass: 0,
     fail: 0,
     judgment_calls: [
-      'Missing AID on Invoke → passthrough (Sub admin coexistence) wrong-size AID → reject',
+      'Missing AID on Invoke -> passthrough (Sub admin coexistence) wrong-size AID -> reject',
       'ADMIN via install hook_param (same key as Sub) FEE/TREASURY via shared local state',
       'FEE 2-byte BE uint16 bps 0..5000 matching Sub admin numeric style',
-      'Missing FEE or TREASURY → 100% seller FEE=0 → no treasury emit',
+      'Missing FEE or TREASURY -> 100% seller FEE=0 -> no treasury emit',
       'IOU seller+treasury payouts via Remit Amounts XAH via Payment',
-      'Emit order URI→treasury→seller then LCK-/ACTIVE-1/AID clear fail-closed',
+      'Emit order URI->treasury->seller then LCK-/ACTIVE-1/AID clear fail-closed',
       'TAC lifetime never decremented Timed live EXP uses DUR=300 wait',
       'Seller cancel AID+CNCL=0x01 ST=1 no bids rem>=DUR/2 URI->seller Cancel pending',
     ],
@@ -520,6 +542,30 @@ async function main() {
   }
 
   const client = new Client(WS);
+  /* testnet ws flakes: retry read-only requests on timeout or disconnect
+     (submits are never retried here) */
+  {
+    const READ_CMDS = new Set(['ledger', 'ledger_current', 'ledger_entry', 'account_info', 'account_lines',
+      'account_objects', 'account_namespace', 'account_tx', 'tx', 'server_state', 'server_info', 'fee']);
+    const rawReq = client.request.bind(client);
+    client.request = async (req) => {
+      for (let i = 0; ; i++) {
+        try {
+          return await rawReq(req);
+        } catch (e) {
+          const m = String((e && e.name) || '') + ' ' + String((e && e.message) || e);
+          if (!READ_CMDS.has(req.command) || i >= 10 || !/Timeout|NotConnected|not open|Disconnected|CONNECTING/i.test(m)) throw e;
+          await sleep(Math.min(3000 * 2 ** i, 30000)); /* backoff 3s 6s 12s 24s 30s ... */
+          if (/Timeout/i.test(m)) {
+            /* zombie socket: force a fresh connection */
+            try { await client.disconnect(); } catch { /* */ }
+            try { await client.connect(); } catch { /* */ }
+          }
+          for (let j = 0; j < 30 && !client.isConnected(); j++) await sleep(1000);
+        }
+      }
+    };
+  }
   await client.connect();
   log('connected', WS);
   log('hashes', JSON.stringify(OUT.hook_hashes));
@@ -732,6 +778,9 @@ async function main() {
   }
 
   const auctions = {};
+  /* IT_FIN_ONLY=p1 runs setup then only the max bid block (dev aid). */
+  const P1_ONLY = process.env.IT_FIN_ONLY === 'p1';
+  if (!P1_ONLY) {
   async function makeAuction(label, params) {
     const lot = await mintUT(client, seller);
     const r = await createRemit(client, seller, host, lot, params);
@@ -869,7 +918,7 @@ async function main() {
     const r = await bidPay(client, bidderA, host, '1500000', a.aid);
     record(expectCase('prep_bid_' + label, r, {
       engine: 'tesSUCCESS',
-      msgIncludes: 'Bid accepted',
+      msgIncludes: 'bid accepted',
       bidsOnly: true,
     }));
   }
@@ -1019,23 +1068,26 @@ async function main() {
     }
   }
 
-  /* ===== Buy-now: winner reject ===== */
+  /* ===== Buy-now: winner may settle (max bid) =====
+   * Was fin_buynow_winner_reject + fin_buynow_winner_cleanup (seller). */
   {
     const a = auctions.bn_winner_reject;
     if (a) {
       const r = await invokeFin(client, bidderA, host, a.aid);
-      record(expectCase('fin_buynow_winner_reject', r, {
-        engine: 'tecHOOK_REJECTED',
-        msgIncludes: 'buy-now finalise forbidden',
-        finOnly: true,
-      }));
-      /* cleanup by seller so ACTIVE can drop */
-      const r2 = await invokeFin(client, seller, host, a.aid);
-      record(expectCase('fin_buynow_winner_cleanup', r2, {
+      record(expectCase('fin_buynow_winner_ok', r, {
         engine: 'tesSUCCESS',
         msgIncludes: 'Settlement pending',
         finOnly: true,
+        emitMin: 1,
       }));
+      const _w = await waitAidCleared(client, host.classicAddress, a.aid);
+      record({
+        name: 'fin_buynow_winner_aid_cleared',
+        pass: _w.ok,
+        engine: _w.ok ? 'ok' : 'timeout',
+        gotMsg: JSON.stringify(_w.keys),
+        want: { cleared: true },
+      });
     }
   }
 
@@ -1090,7 +1142,7 @@ async function main() {
       const treasI1 = await iouBal(client, treasury.classicAddress, 'AUC', issuer.classicAddress);
       const sGain = sellerI1 - sellerI0;
       const tGain = treasI1 - treasI0;
-      /* HIGH=100 FEE 5% → treasury 5, seller 95 */
+      /* HIGH=100 FEE 5% -> treasury 5, seller 95 */
       record({
         name: 'fin_iou_fee_split_remit',
         pass: sGain > 90 && tGain >= 4,
@@ -1129,7 +1181,7 @@ async function main() {
         const k = String(o.HookStateKey || '').toUpperCase();
         if (k.includes(lckKey.slice(0, 16)) && k.endsWith(lckKey.slice(-16))) iouLck = o.HookStateData;
       }
-      /* softer: just check key presence via readHostLocalKeys style — IOU key is raw 32 */
+      /* softer: just check key presence via readHostLocalKeys style - IOU key is raw 32 */
       let foundIou = false;
       let iouData = null;
       for (const o of ns?.result?.namespace_entries || []) {
@@ -1284,7 +1336,7 @@ async function main() {
     }
   }
 
-  /* Cleanup before_exp (still open with bid — wait not done for long DUR). Skip or leave. */
+  /* Cleanup before_exp (still open with bid - wait not done for long DUR). Skip or leave. */
 
   /* ===== LCK / ACTIVE / TAC asserts ===== */
   {
@@ -1296,7 +1348,7 @@ async function main() {
     /* before_exp still open with 1.5XAH locked possibly */
     record({
       name: 'fin_lck_reduced_after_payouts',
-      pass: true, /* informational — remaining may be before_exp HIGH */
+      pass: true, /* informational - remaining may be before_exp HIGH */
       engine: 'ok',
       gotMsg: JSON.stringify(OUT.post_finalise),
       want: { note: 'LCK may retain before_exp bid' },
@@ -1495,7 +1547,7 @@ async function main() {
           want: { cleared: true },
         });
       } else if (keys.TSF === '01' && owner === host.classicAddress) {
-        /* Host still holds — normal reclaim path; heal N/A this run */
+        /* Host still holds - normal reclaim path; heal N/A this run */
         const inv = await invokeFin(client, seller, host, aid);
         const msgs = decodeHr(inv.meta).map((h) => h.msg || '');
         const okReclaim = inv.engine === 'tesSUCCESS'
@@ -1504,7 +1556,7 @@ async function main() {
           name: 'fin_tsf_owner_slr_heal_ok',
           pass: okReclaim,
           engine: inv.engine,
-          gotMsg: 'host custody → normal reclaim: ' + msgs.join('|'),
+          gotMsg: 'host custody -> normal reclaim: ' + msgs.join('|'),
           want: { note: 'heal N/A Owner==host' },
         });
       } else {
@@ -1519,7 +1571,7 @@ async function main() {
     }
   }
 
-  /* ===== PW-H02/H03: timed URI fail → SSF no BNW, WIN retry ===== */
+  /* ===== PW-H02/H03: timed URI fail -> SSF no BNW, WIN retry ===== */
   {
     const lot = await mintUT(client, seller);
     const cr = await createRemit(client, seller, host, lot, {
@@ -1538,7 +1590,7 @@ async function main() {
     if (aid) {
       record(expectCase('fin_timed_strand_bid', await bidPay(client, bidderA, host, '1500000', aid), {
         engine: 'tesSUCCESS',
-        msgIncludes: 'Bid accepted',
+        msgIncludes: 'bid accepted',
         bidsOnly: true,
       }));
       log('waiting DUR_SHORT for timed strand (~310s)...');
@@ -1573,7 +1625,7 @@ async function main() {
       });
       /* WIN retry while stranded: should be allowed (path_timed) */
       const winRetryBlocked = await invokeFin(client, bidderA, host, aid);
-      /* WIN still has DisallowRemit — Finalise may accept auth then Remit fails again */
+      /* WIN still has DisallowRemit - Finalise may accept auth then Remit fails again */
       const winAuthOk = winRetryBlocked.engine === 'tesSUCCESS'
         || (decodeHr(winRetryBlocked.meta).some((h) => /Settlement pending|pending in flight/.test(h.msg || '')));
       const winForbidden = decodeHr(winRetryBlocked.meta).some((h) => (h.msg || '').includes('buy-now finalise forbidden'));
@@ -1623,7 +1675,7 @@ async function main() {
     }
   }
 
-  /* ===== PW-H02: timed URI ok + money fail → UOK no BNW ===== */
+  /* ===== PW-H02: timed URI ok + money fail -> UOK no BNW ===== */
   {
     const lot = await mintUT(client, seller);
     const cr = await createRemit(client, seller, host, lot, {
@@ -1642,7 +1694,7 @@ async function main() {
     if (aid) {
       record(expectCase('fin_money_fail_bid', await bidPay(client, bidderB, host, '1600000', aid), {
         engine: 'tesSUCCESS',
-        msgIncludes: 'Bid accepted',
+        msgIncludes: 'bid accepted',
         bidsOnly: true,
       }));
       log('waiting DUR_SHORT for money-fail strand (~310s)...');
@@ -1739,9 +1791,9 @@ async function main() {
     }
   }
 
-  /* ===== Seller cancel (CNCL) — plan §3 ===== */
+  /* ===== Seller cancel (CNCL) - plan section 3 ===== */
   {
-    /* CNCL without AID → NOPE */
+    /* CNCL without AID -> NOPE */
     {
       const r = await softSubmit(submitAndWait(client, seller, {
         TransactionType: 'Invoke',
@@ -1782,7 +1834,7 @@ async function main() {
           msgIncludes: 'CNCL invalid',
           finOnly: true,
         }));
-        /* leave lot live — cancel early next uses fresh auctions */
+        /* leave lot live - cancel early next uses fresh auctions */
       }
     }
 
@@ -1843,7 +1895,7 @@ async function main() {
           gotMsg: JSON.stringify({ beforeCreateCancel: active0, after: active1, note: 'ACTIVE should net 0 vs pre-create if create+1 cancel-1' }),
           want: { note: 'ACTIVE after cancel equals pre-create snapshot' },
         });
-        /* LCK unchanged — informational soft check via host LCK presence */
+        /* LCK unchanged - informational soft check via host LCK presence */
         const g = await readHostLocalKeys(client, host.classicAddress, NS, ['LCK']);
         record({
           name: 'fin_cncl_ok_early_no_lck_required',
@@ -1902,7 +1954,7 @@ async function main() {
       if (aid) {
         record(expectCase('fin_cncl_has_high_bid', await bidPay(client, bidderA, host, '1500000', aid), {
           engine: 'tesSUCCESS',
-          msgIncludes: 'Bid accepted',
+          msgIncludes: 'bid accepted',
           bidsOnly: true,
         }));
         record(expectCase('fin_cncl_nope_has_high', await invokeFinCncl(client, seller, host, aid), {
@@ -2087,7 +2139,7 @@ async function main() {
 
     /* ===== CNCL mid-flight / forensic belt (L6 + ST/BCNT) ===== */
 
-    /* BNW set (buy-now URI landed) → cancel BNW set; ST=2 co-present but BNW gate first */
+    /* BNW set (buy-now URI landed) -> cancel BNW set; ST=2 co-present but BNW gate first */
     {
       const lot = await mintUT(client, seller);
       const cr = await createRemit(client, seller, host, lot, {
@@ -2156,7 +2208,7 @@ async function main() {
       }
     }
 
-    /* SSF via cancel URI fail (seller DisallowIncomingRemit) → re-CNCL NOPE */
+    /* SSF via cancel URI fail (seller DisallowIncomingRemit) -> re-CNCL NOPE */
     {
       const lot = await mintUT(client, seller);
       const cr = await createRemit(client, seller, host, lot, {
@@ -2244,7 +2296,7 @@ async function main() {
       }
     }
 
-    /* TSF set (ghost ISS Create TrustSet fail) → cancel TSF set; soft if Create Remit-back races */
+    /* TSF set (ghost ISS Create TrustSet fail) -> cancel TSF set; soft if Create Remit-back races */
     {
       const ghost = genWallet();
       const lot = await mintUT(client, seller);
@@ -2287,7 +2339,7 @@ async function main() {
             gotMsg: JSON.stringify({ TSF: keys.TSF, ST: keys.ST }),
             want: { TSF: 1 },
           });
-          /* CNCL immediately — Create Remit-back often races the AID away */
+          /* CNCL immediately - Create Remit-back often races the AID away */
           const tsfCncl = await invokeFinCncl(client, seller, host, aid);
           const tsfMsgs = finMsgs(decodeHr(tsfCncl.meta));
           const tsfHit = tsfMsgs.some((m) => m.includes('cancel TSF set'));
@@ -2381,7 +2433,7 @@ async function main() {
           currency: 'AUC', issuer: issuer.classicAddress, value: '15',
         }, aid), {
           engine: 'tesSUCCESS',
-          msgIncludes: 'Bid accepted',
+          msgIncludes: 'bid accepted',
           bidsOnly: true,
         }));
         record(expectCase('fin_cncl_rfd_disallow_on', await softSubmit(submitAndWait(client, bidderA, {
@@ -2412,10 +2464,10 @@ async function main() {
             currency: 'AUC', issuer: issuer.classicAddress, value: '25',
           }, aid);
           const om = decodeHr(ob.meta).map((h) => h.msg || '');
-          const accepted = ob.engine === 'tesSUCCESS' && om.some((m) => m.includes('prior refund') || m.includes('Bid accepted'));
+          const accepted = ob.engine === 'tesSUCCESS' && om.some((m) => m.includes('prior refund') || m.includes('bid accepted'));
           record({
             name: 'fin_cncl_rfd_outbid_b',
-            pass: accepted || ob.engine !== 'tesSUCCESS', /* NOPE is ok — freeze may pre-block */
+            pass: accepted || ob.engine !== 'tesSUCCESS', /* NOPE is ok - freeze may pre-block */
             engine: ob.engine,
             hash: ob.hash,
             gotMsg: om.join('|') || ob.engine,
@@ -2442,12 +2494,12 @@ async function main() {
             LCKU: keys.LCKU || null,
             SSF: keys.SSF || null,
             WIN: !!keys.WIN,
-            note: rfd ? 'RFD stranded' : (lckuHit ? 'LCKU forensic' : 'refund landed — RFD unforceable this ledger'),
+            note: rfd ? 'RFD stranded' : (lckuHit ? 'LCKU forensic' : 'refund landed - RFD unforceable this ledger'),
           }),
           want: { RFD: '8 if stranded else soft' },
         });
         if (rfd) {
-          /* KVT Finding 1: stranded RFD no longer blocks cancel — with bids present
+          /* KVT Finding 1: stranded RFD no longer blocks cancel - with bids present
            * cancel rejects cancel has bids (not cancel RFD set). */
           {
             const cn = await invokeFinCncl(client, seller, host, aid);
@@ -2488,7 +2540,7 @@ async function main() {
             }, aid);
             const tm = decodeHr(tb.meta).map((h) => h.msg || '');
             const accepted = tb.engine === 'tesSUCCESS'
-              && tm.some((m) => m.includes('Bid accepted') || m.includes('prior refund'));
+              && tm.some((m) => m.includes('bid accepted') || m.includes('prior refund'));
             const notStrandBlock = !tm.some((m) => m.includes('stranded refund claim first'));
             record({
               name: 'fin_cncl_rfd_third_bid_ok',
@@ -2499,25 +2551,25 @@ async function main() {
               want: {
                 note: 'KVT: RFD strand must not block later bids',
                 engine: 'tesSUCCESS',
-                msgAnyOf: ['Bid accepted', 'prior refund'],
+                msgAnyOf: ['Max bid accepted', 'Max bid accepted with prior refund'],
                 msgExcludes: 'stranded refund claim first',
               },
             });
           }
         } else if (lckuHit) {
-          /* refund ok-under → LCKU+SSF (no RFD); still exercises mid-flight belt */
+          /* refund ok-under -> LCKU+SSF (no RFD); still exercises mid-flight belt */
           record({
             name: 'fin_cncl_nope_rfd',
             pass: true,
             engine: 'ok',
-            gotMsg: 'RFD absent; ok-under left LCKU — RFD gate covered by C; LCKU exercised below',
+            gotMsg: 'RFD absent; ok-under left LCKU - RFD gate covered by C; LCKU exercised below',
             want: { soft: 'RFD emit-fail not hit; LCKU path instead' },
           });
           record({
             name: 'fin_cncl_rfd_third_bid_ok',
             pass: true,
             engine: 'ok',
-            gotMsg: 'soft: no RFD strand this run — third-bid-while-RFD not forceable',
+            gotMsg: 'soft: no RFD strand this run - third-bid-while-RFD not forceable',
             want: { soft: 'RFD strand not durable this ledger' },
           });
         } else {
@@ -2532,7 +2584,7 @@ async function main() {
             name: 'fin_cncl_rfd_third_bid_ok',
             pass: true,
             engine: 'ok',
-            gotMsg: 'soft: no RFD strand this run — third-bid-while-RFD not forceable',
+            gotMsg: 'soft: no RFD strand this run - third-bid-while-RFD not forceable',
             want: { soft: 'RFD strand not durable this ledger' },
           });
         }
@@ -2562,7 +2614,7 @@ async function main() {
           }
         }
 
-        /* PEN: clear Disallow, RFDA claims → PEN mid-flight, race CNCL */
+        /* PEN: clear Disallow, RFDA claims -> PEN mid-flight, race CNCL */
         record(expectCase('fin_cncl_pen_disallow_off', await softSubmit(submitAndWait(client, bidderA, {
           TransactionType: 'AccountSet',
           Account: bidderA.classicAddress,
@@ -2642,7 +2694,7 @@ async function main() {
               name: 'fin_cncl_nope_pen',
               pass: true,
               engine: 'ok',
-              gotMsg: 'PEN window closed before CNCL (cbak finished); gate present in C — soft',
+              gotMsg: 'PEN window closed before CNCL (cbak finished); gate present in C - soft',
               want: { soft: 'mid-flight PEN not durable' },
             });
           }
@@ -2680,7 +2732,7 @@ async function main() {
       }
     }
 
-    /* LCKU — live if IOU ok-under hit above; else lab-hard soft */
+    /* LCKU - live if IOU ok-under hit above; else lab-hard soft */
     if (!OUT._cncl_lcku_live) {
       record({
         name: 'fin_cncl_nope_lcku',
@@ -2691,16 +2743,16 @@ async function main() {
       });
     }
 
-    /* ST≠1 — after buy-now ST=2 always co-presents BNW; BNW gate fires first */
+    /* ST!=1 - after buy-now ST=2 always co-presents BNW; BNW gate fires first */
     record({
       name: 'fin_cncl_nope_st',
       pass: true,
       engine: 'ok',
-      gotMsg: 'skipped: isolated ST≠1 not forceable (ST=2 co-presents BNW; cancel BNW set precedes cancel ST). Gate present in C.',
-      want: { soft: 'ST≠1 not isolatable via Create/Bids' },
+      gotMsg: 'skipped: isolated ST!=1 not forceable (ST=2 co-presents BNW; cancel BNW set precedes cancel ST). Gate present in C.',
+      want: { soft: 'ST!=1 not isolatable via Create/Bids' },
     });
 
-    /* BCNT>0 without WIN/HIGH — no public writer; lab-hard */
+    /* BCNT>0 without WIN/HIGH - no public writer; lab-hard */
     record({
       name: 'fin_cncl_nope_bcnt_belt',
       pass: true,
@@ -2841,14 +2893,730 @@ async function main() {
     }
   }
 
-  /* Missing FEE → 100% seller: clear FEE by... can't clear via admin easily.
-     Judgment covered: set FEE missing by never setting on fresh host — skip (already tested FEE=0).
+  } /* end IT_FIN_ONLY skip */
+
+  /* =====================================================================
+   * MAX BID (Finalise price and remainder). p1_* cases.
+   * Main host (pinned Sub/Create/Bids + new Finalise, no seed):
+   *   legacy timed without PRC, legacy buy-now overpay XAH/IOU with
+   *   remainder to buyer, WIN settles a settled buy-now, remainder strand
+   *   (DepositAuth XAH, DisallowIncomingRemit IOU) and claim, WDT on the
+   *   remainder, LCK delta per path.
+   * Seed host (same four hooks + test-only seed hook op 0x09):
+   *   PRC remainder XAH/IOU, PRC snapshot mismatch, PRC > HIGH NOPE,
+   *   IFR settle gate, claim while IFR, PEN gate, cancel IFR belt,
+   *   claim subtract partial, retry skips WPAY, timed remainder strand,
+   *   LCK reconciliation to zero.
+   * ===================================================================== */
+  {
+    const P1 = { seedHost: null };
+    const ISO_AUC = 'AUC';
+    const curFull = Buffer.alloc(20);
+    Buffer.from(ISO_AUC, 'ascii').copy(curFull, 12);
+    const CUR20 = curFull.toString('hex').toUpperCase();
+    const ISS20 = accHex(issuer.classicAddress);
+    const IOU_LCK_KEY = iouLckKeyHex(CUR20, ISS20);
+    const auc = (v) => ({ currency: ISO_AUC, issuer: issuer.classicAddress, value: String(v) });
+    const strandKeyHex = (addr) => ('52' + accHex(addr) + '00'.repeat(11)).toUpperCase();
+    const asciiHex = (s) => Buffer.from(s, 'ascii').toString('hex').toUpperCase();
+    function xflToNum(hex) {
+      if (!hex || /^0+$/.test(hex)) return 0;
+      const v = BigInt('0x' + hex);
+      const mant = v & ((1n << 54n) - 1n);
+      const exp = Number((v >> 54n) & 0xFFn) - 97;
+      const neg = ((v >> 62n) & 1n) === 0n;
+      const n = Number(mant) * 10 ** exp;
+      return neg ? -n : n;
+    }
+    const near = (a, b, tol = 1e-9) => Math.abs(Number(a) - Number(b)) <= tol * Math.max(1, Math.abs(Number(b)));
+    async function nsEntries(hostAddr, nsId) {
+      const r = await client.request({
+        command: 'account_namespace', account: hostAddr, namespace_id: nsId, ledger_index: 'validated',
+      }).catch(() => null);
+      return r?.result?.namespace_entries || [];
+    }
+    async function readLck(hostAddr, nsId) {
+      for (const o of await nsEntries(hostAddr, nsId)) {
+        const k = String(o.HookStateKey || '').toUpperCase();
+        if (k === asciiHex('LCK').padStart(64, '0')) return BigInt('0x' + o.HookStateData);
+      }
+      return 0n;
+    }
+    async function readIouLck(hostAddr, nsId) {
+      for (const o of await nsEntries(hostAddr, nsId)) {
+        if (String(o.HookStateKey || '').toUpperCase() === IOU_LCK_KEY) return xflToNum(String(o.HookStateData));
+      }
+      return 0;
+    }
+    /* exact key match (readAidKeys suffix match maps SPEN onto PEN) */
+    const P1_KEYS = ['DUR', 'SP', 'MB', 'BN', 'CUR', 'ISS', 'SLR', 'URI', 'EXP', 'ST', 'HIGH', 'WIN', 'BCNT', 'BNW', 'SSF', 'UOK', 'TSF', 'CPR', 'SEXP', 'SPEN', 'TPAY', 'SPAY', 'LCKU', 'PEN', 'RFD', 'RFDA', 'RFDT', 'WDT', 'PRC', 'WPAY', 'IFR'];
+    async function readK(hostAddr, aid) {
+      const found = {};
+      const byKey = {};
+      for (const o of await nsEntries(hostAddr, aid)) byKey[String(o.HookStateKey || '').toUpperCase()] = String(o.HookStateData || '').toUpperCase();
+      for (const name of P1_KEYS) {
+        const k = asciiHex(name).padStart(64, '0');
+        if (byKey[k] != null) found[name] = byKey[k];
+      }
+      return found;
+    }
+    async function readExact(hostAddr, nsId, keyHex64) {
+      for (const o of await nsEntries(hostAddr, nsId)) {
+        if (String(o.HookStateKey || '').toUpperCase() === keyHex64.toUpperCase()) return String(o.HookStateData).toUpperCase();
+      }
+      return null;
+    }
+    const readStrand = (hostAddr, aid, addr) => readExact(hostAddr, aid, strandKeyHex(addr));
+    async function waitPred(fn, maxMs = 90000, stepMs = 2000) {
+      const t0 = Date.now();
+      let v;
+      while (Date.now() - t0 < maxMs) {
+        v = await fn();
+        if (v.ok) return v;
+        await sleep(stepMs);
+      }
+      return v || { ok: false };
+    }
+    async function txFee(hash) {
+      const r = await client.request({ command: 'tx', transaction: hash }).catch(() => null);
+      return BigInt(r?.result?.Fee || 0);
+    }
+    /* A URIToken Remit from the host also sends the receiver one owner
+       reserve increment (Xahau Remit pays destination reserve), so a winner
+       who receives the lot in the same settle gains reserve_inc as well. */
+    const RES_INC = await (async () => {
+      const r = await client.request({ command: 'server_state' }).catch(() => null);
+      const v = r?.result?.state?.validated_ledger?.reserve_inc;
+      return v != null ? BigInt(v) : 200000n;
+    })();
+    OUT.p1_reserve_inc = String(RES_INC);
+    async function findIncomingPayment(addr, fromAddr, drops) {
+      const r = await client.request({ command: 'account_tx', account: addr, limit: 30 }).catch(() => null);
+      for (const t of r?.result?.transactions || []) {
+        const tx = t.tx || t.tx_json || {};
+        if (tx.TransactionType === 'Payment' && tx.Account === fromAddr && String(tx.Amount) === String(drops)) return tx;
+      }
+      return null;
+    }
+    async function acctSet(w, flagKey, flag) {
+      return softSubmit(submitAndWait(client, w, { TransactionType: 'AccountSet', Account: w.classicAddress, [flagKey]: flag }));
+    }
+    async function trustAndIssue(w, val) {
+      await softSubmit(submitAndWait(client, w, {
+        TransactionType: 'TrustSet', Account: w.classicAddress,
+        LimitAmount: { currency: ISO_AUC, issuer: issuer.classicAddress, value: '1000000' },
+      }));
+      return softSubmit(submitAndWait(client, issuer, {
+        TransactionType: 'Payment', Account: issuer.classicAddress, Destination: w.classicAddress, Amount: auc(val),
+      }));
+    }
+    async function createOn(h, params) {
+      const lot = await mintUT(client, seller);
+      const r = await createRemit(client, seller, h, lot, params);
+      const aid = r.engine === 'tesSUCCESS' ? aidFrom(r.hash, lot) : null;
+      let exp = null;
+      if (aid) {
+        const k = await readK(h.classicAddress, aid);
+        if (k.EXP) exp = Buffer.from(k.EXP, 'hex').readBigUInt64BE(0);
+      }
+      return { aid, lot, exp, engine: r.engine, hash: r.hash };
+    }
+    function hrOf(r) { return finHr(decodeHr(r.meta)); }
+    function emitsOf(r) { return Number(hrOf(r)?.emit || 0); }
+
+    /* ---- fresh wallets ---- */
+    const winW = genWallet();   /* P1 RequireDestTag buyer */
+    const winD = genWallet();   /* P3 DepositAuth buyer */
+    const winP = genWallet();   /* P2 IOU buyer */
+    const winI = genWallet();   /* P4 IOU disallow buyer */
+    const winL = genWallet();   /* P5 legacy timed bidder */
+    const winS = genWallet();   /* seed host XAH bidder */
+    const winS2 = genWallet();  /* seed host retry-skips-WPAY bidder */
+    const winSD = genWallet();  /* seed host timed strand bidder */
+    const winSI = genWallet();  /* seed host IOU bidder */
+    const clm = genWallet();    /* seed host claim / partial */
+    const hostS = genWallet();
+    OUT.accounts.p1 = Object.fromEntries(Object.entries({ winW, winD, winP, winI, winL, winS, winS2, winSD, winSI, clm, hostS })
+      .map(([k, w]) => [k, w.classicAddress]));
+    const fundList = [[winW, 30_000_000n], [winD, 30_000_000n], [winP, 25_000_000n], [winI, 25_000_000n], [winL, 25_000_000n]];
+    if (WASM_SEED) {
+      fundList.push([hostS, 400_000_000n], [winS, 40_000_000n], [winS2, 25_000_000n], [winSD, 25_000_000n],
+        [winSI, 25_000_000n], [clm, 25_000_000n]);
+    }
+    for (const [w, d] of fundList) {
+      await ensureBank(d + 40_000_000n);
+      await pay(client, bank, w, d);
+    }
+    for (const [label, w, v] of [['P', winP, '1000'], ['I', winI, '1000']].concat(WASM_SEED ? [['SI', winSI, '1000']] : [])) {
+      const r = await trustAndIssue(w, v);
+      record(expectCase('p1_setup_auc_' + label, r, { engine: 'tesSUCCESS', anyHook: true }));
+    }
+    record(expectCase('p1_setup_winW_require_dest', await acctSet(winW, 'SetFlag', ASF_REQUIRE_DEST), { engine: 'tesSUCCESS', anyHook: true }));
+
+    /* ---- seed host setup ---- */
+    const NS_S = crypto.createHash('sha256').update('AuctionHouseV2-Finalise-p1seed-' + Date.now()).digest().toString('hex').toUpperCase();
+    const seedOk = !!WASM_SEED;
+    async function seedRaw(keyHex, valHex, aidHex, signer = admin) {
+      const params = [hp('SEED', '09'), hp('SKEY', keyHex)];
+      if (valHex) params.push(hp('SVAL', valHex));
+      if (aidHex) params.push(hp('SAID', aidHex));
+      return softSubmit(submitAndWait(client, signer, {
+        TransactionType: 'Invoke', Account: signer.classicAddress, Destination: hostS.classicAddress, HookParameters: params,
+      }));
+    }
+    const seeded = (r) => r.engine === 'tesSUCCESS' && anyMsgs(decodeHr(r.meta)).includes('state seeded');
+    if (seedOk) {
+      const slot = (wasm, on, params) => ({
+        Hook: {
+          CreateCode: wasm.toString('hex').toUpperCase(), Flags: HSF_OVERRIDE, HookApiVersion: 0,
+          HookNamespace: NS_S, HookOn: on, ...(params ? { HookParameters: params } : {}),
+        },
+      });
+      const r = await softSubmit(submitAndWait(client, hostS, {
+        TransactionType: 'SetHook', Account: hostS.classicAddress,
+        Hooks: [
+          slot(WASM_SUB, HOOK_ON_PAYMENT_INVOKE, [hp('ADMIN', accHex(admin.classicAddress))]),
+          slot(WASM_CREATE, HOOK_ON_CREATE, null),
+          slot(WASM_BIDS, HOOK_ON_BIDS, [hp('ADMIN', accHex(admin.classicAddress))]), /* Bids owns admin CLR */
+          slot(WASM_FIN, HOOK_ON_INVOKE, [hp('ADMIN', accHex(admin.classicAddress))]),
+          slot(WASM_SEED, HOOK_ON_INVOKE, null),
+        ],
+      }));
+      record(expectCase('p1_seed_host_sethook', r, { engine: 'tesSUCCESS', anyHook: true }));
+      for (const [name, hex] of [
+        ['SUBPRICE', u64be(PRICE)], ['SUBPERIOD', u32be(PERIOD)], ['SUBSPLIT', u16be(SPLIT_PCT)],
+        ['AUCCAP', u16be(AUCCAP)], ['TREASURY', accHex(treasury.classicAddress)], ['FEE', u16be(FEE_BPS)],
+      ]) {
+        record(expectCase('p1_seed_host_admin_' + name, await invokeAdmin(client, admin, hostS, name, hex), { engine: 'tesSUCCESS', anyHook: true }));
+      }
+      record(expectCase('p1_seed_host_sub_seller', await subPay(client, seller, hostS, PRICE), {
+        engine: 'tesSUCCESS', msgIncludes: 'Subscription', anyHook: true,
+      }));
+      P1.seedHost = hostS;
+    } else {
+      record({ name: 'p1_seed_host_skipped', pass: true, engine: 'skipped', gotMsg: 'no SmokeStateSeed.wasm at ' + SEED_PATH, want: { note: 'seeded PRC/IFR cases need the test seed hook' } });
+    }
+
+    /* ---- create auctions (timed ones first so they expire together) ---- */
+    const A = {};
+    A.P5 = await createOn(host, { DUR: u64be(DUR_SHORT), SP: u64be(1_000_000) });
+    if (seedOk) {
+      A.S1 = await createOn(hostS, { DUR: u64be(DUR_SHORT), SP: u64be(1_000_000) });
+      A.S3 = await createOn(hostS, { DUR: u64be(DUR_SHORT), SP: u64be(1_000_000) });
+      A.S4 = await createOn(hostS, { DUR: u64be(DUR_SHORT), SP: u64be(1_000_000) });
+      A.S8 = await createOn(hostS, { DUR: u64be(DUR_SHORT), SP: u64be(1_000_000) });
+      A.S9 = await createOn(hostS, { DUR: u64be(DUR_SHORT), SP: u64be(1_000_000) });
+      A.S2 = await createOn(hostS, { DUR: u64be(DUR_SHORT), SP: xflHex(10), CUR: curIso(ISO_AUC), ISS: ISS20 });
+      A.S6 = await createOn(hostS, { DUR: u64be(DUR_LONG), SP: u64be(1_000_000) });
+    }
+    A.P1 = await createOn(host, { DUR: u64be(DUR_LONG), SP: u64be(1_000_000), BN: u64be(5_000_000) });
+    A.P3 = await createOn(host, { DUR: u64be(DUR_LONG), SP: u64be(1_000_000), BN: u64be(5_000_000) });
+    A.P2 = await createOn(host, { DUR: u64be(DUR_LONG), SP: xflHex(10), BN: xflHex(100), CUR: curIso(ISO_AUC), ISS: ISS20 });
+    A.P4 = await createOn(host, { DUR: u64be(DUR_LONG), SP: xflHex(10), BN: xflHex(100), CUR: curIso(ISO_AUC), ISS: ISS20 });
+    for (const [k, a] of Object.entries(A)) {
+      record({ name: 'p1_setup_create_' + k, pass: !!a.aid, engine: a.engine, hash: a.hash, gotMsg: a.aid || '', want: { engine: 'tesSUCCESS' } });
+    }
+    OUT.p1_auctions = Object.fromEntries(Object.entries(A).map(([k, a]) => [k, { aid: a.aid, lot: a.lot, exp: a.exp != null ? String(a.exp) : null }]));
+    if (A.P2.aid || A.P4.aid) {
+      const lined = await waitHostTrustLine(client, host.classicAddress, issuer.classicAddress, ISO_AUC);
+      record({ name: 'p1_main_host_auc_trustline', pass: lined, engine: lined ? 'ok' : 'timeout', gotMsg: String(lined), want: { trustline: true } });
+    }
+    if (seedOk && A.S2.aid) {
+      const lined = await waitHostTrustLine(client, hostS.classicAddress, issuer.classicAddress, ISO_AUC);
+      record({ name: 'p1_seed_host_auc_trustline', pass: lined, engine: lined ? 'ok' : 'timeout', gotMsg: String(lined), want: { trustline: true } });
+    }
+
+    /* ---- timed bids + PRC seeds ---- */
+    const bidOk = { engine: 'tesSUCCESS', msgIncludes: 'bid accepted', bidsOnly: true };
+    if (A.P5.aid) record(expectCase('p1_P5_bid', await bidPay(client, winL, host, '2000000', A.P5.aid), bidOk));
+    if (seedOk) {
+      if (A.S1.aid) record(expectCase('p1_S1_bid', await bidPay(client, winS, hostS, '3000000', A.S1.aid), bidOk));
+      if (A.S3.aid) record(expectCase('p1_S3_bid', await bidPay(client, winS, hostS, '2000000', A.S3.aid), bidOk));
+      if (A.S4.aid) record(expectCase('p1_S4_bid', await bidPay(client, winS, hostS, '2000000', A.S4.aid), bidOk));
+      if (A.S8.aid) record(expectCase('p1_S8_bid', await bidPay(client, winS2, hostS, '3000000', A.S8.aid), bidOk));
+      if (A.S9.aid) record(expectCase('p1_S9_bid', await bidPay(client, winSD, hostS, '3000000', A.S9.aid), bidOk));
+      if (A.S2.aid) record(expectCase('p1_S2_bid', await bidPay(client, winSI, hostS, auc(30), A.S2.aid), bidOk));
+      const prcSeeds = [
+        ['S1', u64be(2_000_000) + u64be(3_000_000)],
+        ['S3', u64be(1_000_000) + u64be(9_000_000)],
+        ['S4', u64be(3_000_000) + u64be(2_000_000)],
+        ['S8', u64be(2_000_000) + u64be(3_000_000)],
+        ['S9', u64be(2_000_000) + u64be(3_000_000)],
+      ];
+      if (A.S2.aid) {
+        const k = await readK(hostS.classicAddress, A.S2.aid);
+        P1.s2High = k.HIGH || null;
+        prcSeeds.push(['S2', xflHex(20) + String(k.HIGH || '')]);
+      }
+      for (const [k, v] of prcSeeds) {
+        if (!A[k].aid) continue;
+        const r = await seedRaw(asciiHex('PRC'), v, A[k].aid);
+        record({ name: 'p1_' + k + '_seed_prc', pass: seeded(r) && v.length === 32, engine: r.engine, hash: r.hash, gotMsg: anyMsgs(decodeHr(r.meta)).join('|'), want: { msg: 'state seeded', PRC: v } });
+      }
+    }
+
+    /* ===== P1: legacy buy-now overpay XAH, WIN settles, WDT on remainder ===== */
+    if (A.P1.aid) {
+      const a = A.P1;
+      const r0 = await softSubmit(submitAndWait(client, winW, {
+        TransactionType: 'Payment', Account: winW.classicAddress, Destination: host.classicAddress,
+        Amount: '7000000', DestinationTag: 4242, HookParameters: [hp('AID', a.aid)],
+      }));
+      record(expectCase('p1_bn_overpay_xah_buy', r0, { engine: 'tesSUCCESS', msgIncludes: 'Buy-now accepted', bidsOnly: true, emitMin: 1 }));
+      const moved = await waitUriOwner(client, a.lot, winW.classicAddress);
+      const kpre = await readK(host.classicAddress, a.aid);
+      record({ name: 'p1_bn_overpay_xah_state', pass: moved && kpre.HIGH === u64be(7_000_000) && kpre.WDT === u32be(4242) && kpre.ST === '02' && (!kpre.PRC || kpre.PRC === u64be(5_000_000) + u64be(7_000_000)),
+        engine: 'ok', gotMsg: JSON.stringify({ moved, HIGH: kpre.HIGH, WDT: kpre.WDT, ST: kpre.ST, PRC: kpre.PRC || null }), want: { HIGH: 7000000, WDT: 4242, ST: 2, PRC: 'absent (older Bids) or BN||HIGH 5000000||7000000 (max bid Bids)' } });
+      const s0 = await bal(client, seller.classicAddress);
+      const t0 = await bal(client, treasury.classicAddress);
+      const w0 = await bal(client, winW.classicAddress);
+      const l0 = await readLck(host.classicAddress, NS);
+      const r = await invokeFin(client, winW, host, a.aid);
+      record(expectCase('p1_bn_overpay_xah_win_finalise_ok', r, { engine: 'tesSUCCESS', msgIncludes: 'Settlement pending', finOnly: true }));
+      record({ name: 'p1_bn_overpay_xah_emit3', pass: emitsOf(r) === 3, engine: 'ok', gotMsg: 'emit ' + emitsOf(r), want: { emit: 3, legs: 'treasury, seller, remainder' } });
+      const cl = await waitAidCleared(client, host.classicAddress, a.aid);
+      await sleep(1500);
+      const s1 = await bal(client, seller.classicAddress);
+      const t1 = await bal(client, treasury.classicAddress);
+      const w1 = await bal(client, winW.classicAddress);
+      const l1 = await readLck(host.classicAddress, NS);
+      const fee = await txFee(r.hash);
+      record({ name: 'p1_bn_overpay_xah_aid_cleared', pass: cl.ok, engine: cl.ok ? 'ok' : 'timeout', gotMsg: JSON.stringify(cl.keys), want: { cleared: 'incl PRC WPAY IFR' } });
+      record({ name: 'p1_bn_overpay_xah_split', pass: (s1 - s0) === 4_750_000n && (t1 - t0) === 250_000n && (w1 - w0) === 2_000_000n - fee,
+        engine: 'ok', gotMsg: JSON.stringify({ seller: String(s1 - s0), treasury: String(t1 - t0), winner: String(w1 - w0), invokeFee: String(fee) }),
+        want: { seller: 4750000, treasury: 250000, winner: '2000000 - invoke fee', note: 'fee is 5% of BN price 5 XAH, overpay 2 XAH back to buyer' } });
+      record({ name: 'p1_bn_overpay_xah_lck', pass: (l0 - l1) === 7_000_000n, engine: 'ok', gotMsg: JSON.stringify({ before: String(l0), after: String(l1) }), want: { delta: -7000000 } });
+      const rtx = await findIncomingPayment(winW.classicAddress, host.classicAddress, 2_000_000);
+      record({ name: 'p1_bn_overpay_xah_remainder_wdt', pass: !!rtx && Number(rtx.DestinationTag) === 4242, engine: rtx ? 'ok' : 'missing', gotMsg: JSON.stringify(rtx ? { DestinationTag: rtx.DestinationTag, hash: rtx.hash } : null), want: { DestinationTag: 4242 } });
+    }
+
+    /* ===== P2: legacy buy-now overpay IOU (seller invokes) ===== */
+    if (A.P2.aid) {
+      const a = A.P2;
+      const r0 = await bidPay(client, winP, host, auc(120), a.aid);
+      record(expectCase('p1_bn_overpay_iou_buy', r0, { engine: 'tesSUCCESS', msgIncludes: 'Buy-now accepted', bidsOnly: true, emitMin: 1 }));
+      await waitUriOwner(client, a.lot, winP.classicAddress);
+      await waitPred(async () => { const k = await readK(host.classicAddress, a.aid); return { ok: k.ST === '02' }; }, 60000);
+      const s0 = await iouBal(client, seller.classicAddress, ISO_AUC, issuer.classicAddress);
+      const t0 = await iouBal(client, treasury.classicAddress, ISO_AUC, issuer.classicAddress);
+      const w0 = await iouBal(client, winP.classicAddress, ISO_AUC, issuer.classicAddress);
+      const l0 = await readIouLck(host.classicAddress, NS);
+      const r = await invokeFin(client, admin, host, a.aid);
+      record(expectCase('p1_bn_overpay_iou_finalise_ok', r, { engine: 'tesSUCCESS', msgIncludes: 'Settlement pending', finOnly: true }));
+      record({ name: 'p1_bn_overpay_iou_emit3', pass: emitsOf(r) === 3, engine: 'ok', gotMsg: 'emit ' + emitsOf(r), want: { emit: 3 } });
+      const cl = await waitAidCleared(client, host.classicAddress, a.aid);
+      await sleep(1500);
+      const s1 = await iouBal(client, seller.classicAddress, ISO_AUC, issuer.classicAddress);
+      const t1 = await iouBal(client, treasury.classicAddress, ISO_AUC, issuer.classicAddress);
+      const w1 = await iouBal(client, winP.classicAddress, ISO_AUC, issuer.classicAddress);
+      const l1 = await readIouLck(host.classicAddress, NS);
+      record({ name: 'p1_bn_overpay_iou_aid_cleared', pass: cl.ok, engine: cl.ok ? 'ok' : 'timeout', gotMsg: JSON.stringify(cl.keys), want: { cleared: true } });
+      record({ name: 'p1_bn_overpay_iou_split', pass: near(s1 - s0, 95) && near(t1 - t0, 5) && near(w1 - w0, 20),
+        engine: 'ok', gotMsg: JSON.stringify({ seller: s1 - s0, treasury: t1 - t0, winner: w1 - w0 }), want: { seller: 95, treasury: 5, winner: 20 } });
+      record({ name: 'p1_bn_overpay_iou_lck', pass: near(l0 - l1, 120), engine: 'ok', gotMsg: JSON.stringify({ before: l0, after: l1 }), want: { delta: -120 } });
+    }
+
+    /* ===== P3: buy-now remainder strand (DepositAuth) then claim ===== */
+    if (A.P3.aid) {
+      const a = A.P3;
+      const r0 = await bidPay(client, winD, host, '6500000', a.aid);
+      record(expectCase('p1_rmd_strand_xah_buy', r0, { engine: 'tesSUCCESS', msgIncludes: 'Buy-now accepted', bidsOnly: true, emitMin: 1 }));
+      await waitUriOwner(client, a.lot, winD.classicAddress);
+      await waitPred(async () => { const k = await readK(host.classicAddress, a.aid); return { ok: k.ST === '02' }; }, 60000);
+      record(expectCase('p1_rmd_strand_xah_set_depositauth', await acctSet(winD, 'SetFlag', ASF_DEPOSIT_AUTH), { engine: 'tesSUCCESS', anyHook: true }));
+      const s0 = await bal(client, seller.classicAddress);
+      const t0 = await bal(client, treasury.classicAddress);
+      const l0 = await readLck(host.classicAddress, NS);
+      const r = await invokeFin(client, admin, host, a.aid);
+      record(expectCase('p1_rmd_strand_xah_finalise_ok', r, { engine: 'tesSUCCESS', msgIncludes: 'Settlement pending', finOnly: true }));
+      record({ name: 'p1_rmd_strand_xah_emit3', pass: emitsOf(r) === 3, engine: 'ok', gotMsg: 'emit ' + emitsOf(r), want: { emit: 3 } });
+      const cl = await waitAidCleared(client, host.classicAddress, a.aid);
+      await sleep(1500);
+      const s1 = await bal(client, seller.classicAddress);
+      const t1 = await bal(client, treasury.classicAddress);
+      const l1 = await readLck(host.classicAddress, NS);
+      const st = await readStrand(host.classicAddress, a.aid, winD.classicAddress);
+      record({ name: 'p1_rmd_strand_xah_committed', pass: cl.ok, engine: cl.ok ? 'ok' : 'timeout', gotMsg: JSON.stringify(cl.keys), want: { cleared: 'AID committed although remainder failed' } });
+      record({ name: 'p1_rmd_strand_xah_seller_treasury_paid', pass: (s1 - s0) === 4_750_000n && (t1 - t0) === 250_000n,
+        engine: 'ok', gotMsg: JSON.stringify({ seller: String(s1 - s0), treasury: String(t1 - t0) }), want: { seller: 4750000, treasury: 250000 } });
+      record({ name: 'p1_rmd_strand_xah_strand', pass: !!st && st.length === 106 && st.slice(0, 16) === u64be(1_500_000) && st.slice(24, 26) === '00',
+        engine: st ? 'ok' : 'missing', gotMsg: String(st), want: { amount: 1500000, flags: 0 } });
+      record({ name: 'p1_rmd_strand_xah_lck', pass: (l0 - l1) === 5_000_000n, engine: 'ok', gotMsg: JSON.stringify({ before: String(l0), after: String(l1) }), want: { delta: -5000000, note: '1.5 XAH stays locked as strand' } });
+      record(expectCase('p1_rmd_strand_xah_clear_depositauth', await acctSet(winD, 'ClearFlag', ASF_DEPOSIT_AUTH), { engine: 'tesSUCCESS', anyHook: true }));
+      const w0 = await bal(client, winD.classicAddress);
+      const c = await invokeFin(client, winD, host, a.aid);
+      record(expectCase('p1_rmd_strand_xah_claim', c, { engine: 'tesSUCCESS', msgIncludes: 'Stranded refund claimed', finOnly: true, emitMin: 1 }));
+      const gone = await waitPred(async () => ({ ok: !(await readStrand(host.classicAddress, a.aid, winD.classicAddress)) }), 60000);
+      await sleep(1500);
+      const w1 = await bal(client, winD.classicAddress);
+      const l2 = await readLck(host.classicAddress, NS);
+      const cf = await txFee(c.hash);
+      const pen = await readK(host.classicAddress, a.aid);
+      record({ name: 'p1_rmd_strand_xah_claim_paid', pass: gone.ok && (w1 - w0) === 1_500_000n - cf && (l1 - l2) === 1_500_000n && !pen.PEN && !pen.RFD,
+        engine: 'ok', gotMsg: JSON.stringify({ strandGone: gone.ok, winner: String(w1 - w0), fee: String(cf), lckDelta: String(l1 - l2), keys: pen }), want: { winner: '1500000 - fee', lck: -1500000, PEN: 'absent' } });
+    }
+
+    /* ===== P4: IOU buy-now remainder strand (DisallowIncomingRemit), claim after commit ===== */
+    if (A.P4.aid) {
+      const a = A.P4;
+      const r0 = await bidPay(client, winI, host, auc(130), a.aid);
+      record(expectCase('p1_rmd_strand_iou_buy', r0, { engine: 'tesSUCCESS', msgIncludes: 'Buy-now accepted', bidsOnly: true, emitMin: 1 }));
+      await waitUriOwner(client, a.lot, winI.classicAddress);
+      await waitPred(async () => { const k = await readK(host.classicAddress, a.aid); return { ok: k.ST === '02' }; }, 60000);
+      record(expectCase('p1_rmd_strand_iou_set_disallow', await acctSet(winI, 'SetFlag', ASF_DISALLOW_INCOMING_REMIT), { engine: 'tesSUCCESS', anyHook: true }));
+      const s0 = await iouBal(client, seller.classicAddress, ISO_AUC, issuer.classicAddress);
+      const t0 = await iouBal(client, treasury.classicAddress, ISO_AUC, issuer.classicAddress);
+      const l0 = await readIouLck(host.classicAddress, NS);
+      const r = await invokeFin(client, admin, host, a.aid);
+      record(expectCase('p1_rmd_strand_iou_finalise_ok', r, { engine: 'tesSUCCESS', msgIncludes: 'Settlement pending', finOnly: true }));
+      const cl = await waitAidCleared(client, host.classicAddress, a.aid);
+      await sleep(1500);
+      const s1 = await iouBal(client, seller.classicAddress, ISO_AUC, issuer.classicAddress);
+      const t1 = await iouBal(client, treasury.classicAddress, ISO_AUC, issuer.classicAddress);
+      const l1 = await readIouLck(host.classicAddress, NS);
+      const st = await readStrand(host.classicAddress, a.aid, winI.classicAddress);
+      const stAmt = st ? xflToNum(st.slice(0, 16)) : null;
+      const stIou = st ? (parseInt(st.slice(24, 26), 16) & 0x02) !== 0 && st.slice(26, 66) === CUR20 && st.slice(66, 106) === ISS20 : false;
+      record({ name: 'p1_rmd_strand_iou_committed', pass: cl.ok, engine: cl.ok ? 'ok' : 'timeout', gotMsg: JSON.stringify(cl.keys), want: { cleared: true } });
+      record({ name: 'p1_rmd_strand_iou_seller_treasury_paid', pass: near(s1 - s0, 95) && near(t1 - t0, 5), engine: 'ok', gotMsg: JSON.stringify({ seller: s1 - s0, treasury: t1 - t0 }), want: { seller: 95, treasury: 5 } });
+      record({ name: 'p1_rmd_strand_iou_strand', pass: near(stAmt, 30) && stIou, engine: st ? 'ok' : 'missing', gotMsg: String(st), want: { amount: 30, flags: 'IOU', cur: CUR20, iss: ISS20 } });
+      record({ name: 'p1_rmd_strand_iou_lck', pass: near(l0 - l1, 100), engine: 'ok', gotMsg: JSON.stringify({ before: l0, after: l1 }), want: { delta: -100 } });
+      record(expectCase('p1_rmd_strand_iou_clear_disallow', await acctSet(winI, 'ClearFlag', ASF_DISALLOW_INCOMING_REMIT), { engine: 'tesSUCCESS', anyHook: true }));
+      const w0 = await iouBal(client, winI.classicAddress, ISO_AUC, issuer.classicAddress);
+      const c = await invokeFin(client, winI, host, a.aid);
+      record(expectCase('p1_rmd_strand_iou_claim_after_commit', c, { engine: 'tesSUCCESS', msgIncludes: 'Stranded refund claimed', finOnly: true, emitMin: 1 }));
+      const gone = await waitPred(async () => ({ ok: !(await readStrand(host.classicAddress, a.aid, winI.classicAddress)) }), 60000);
+      await sleep(1500);
+      const w1 = await iouBal(client, winI.classicAddress, ISO_AUC, issuer.classicAddress);
+      const l2 = await readIouLck(host.classicAddress, NS);
+      record({ name: 'p1_rmd_strand_iou_claim_paid', pass: gone.ok && near(w1 - w0, 30) && near(l1 - l2, 30), engine: 'ok', gotMsg: JSON.stringify({ strandGone: gone.ok, winner: w1 - w0, lckDelta: l1 - l2 }), want: { winner: 30, lck: -30 } });
+    }
+
+    /* ===== S6 (seed): cancel IFR belt ===== */
+    if (seedOk && A.S6.aid) {
+      const a = A.S6;
+      let r = await seedRaw(asciiHex('IFR'), '0001', a.aid);
+      record({ name: 'p1_cancel_ifr_seed', pass: seeded(r), engine: r.engine, gotMsg: anyMsgs(decodeHr(r.meta)).join('|'), want: { msg: 'state seeded' } });
+      r = await invokeFinCncl(client, seller, hostS, a.aid);
+      record(expectCase('p1_cancel_ifr_belt', r, { engine: 'tecHOOK_REJECTED', msgIncludes: 'cancel refunds in flight', finOnly: true }));
+      r = await seedRaw(asciiHex('IFR'), null, a.aid);
+      record({ name: 'p1_cancel_ifr_unseed', pass: seeded(r), engine: r.engine, gotMsg: anyMsgs(decodeHr(r.meta)).join('|'), want: { msg: 'state seeded' } });
+      r = await invokeFinCncl(client, seller, hostS, a.aid);
+      record(expectCase('p1_cancel_after_ifr_ok', r, { engine: 'tesSUCCESS', msgIncludes: 'Cancel pending', finOnly: true, emitMin: 1 }));
+      const cl = await waitAidCleared(client, hostS.classicAddress, a.aid);
+      record({ name: 'p1_cancel_after_ifr_cleared', pass: cl.ok, engine: cl.ok ? 'ok' : 'timeout', gotMsg: JSON.stringify(cl.keys), want: { cleared: true } });
+    }
+
+    /* ===== S7 (seed): claim subtract partial (merge while claim in flight) ===== */
+    if (seedOk) {
+      const aid = crypto.randomBytes(32).toString('hex').toUpperCase();
+      const lckKey = asciiHex('LCK');
+      const base = await readLck(hostS.classicAddress, NS_S);
+      let r = await seedRaw(lckKey, u64be(base + 800_000n), null);
+      const strandVal = (drops) => u64be(drops) + '00000000' + '00' + '00'.repeat(40);
+      const r2 = await seedRaw(strandKeyHex(clm.classicAddress), strandVal(500_000n), aid);
+      record({ name: 'p1_claim_partial_seed', pass: seeded(r) && seeded(r2), engine: r2.engine, gotMsg: 'LCK+0.8 XAH strand 0.5 XAH', want: { msg: 'state seeded' } });
+      /* claim (seq n) then strand merge to 0.8 XAH (seq n+1), same ledger, before the claim cbak */
+      const p1 = await client.autofill({ TransactionType: 'Invoke', Account: clm.classicAddress, Destination: hostS.classicAddress, HookParameters: [hp('AID', aid)], NetworkID: NETWORK_ID });
+      const p2 = await client.autofill({
+        TransactionType: 'Invoke', Account: clm.classicAddress, Destination: hostS.classicAddress, NetworkID: NETWORK_ID,
+        HookParameters: [hp('SEED', '09'), hp('SKEY', strandKeyHex(clm.classicAddress)), hp('SVAL', strandVal(800_000n)), hp('SAID', aid)],
+      });
+      p2.Sequence = p1.Sequence + 1;
+      p2.LastLedgerSequence = p1.LastLedgerSequence + 4;
+      const sg1 = clm.sign(p1);
+      const sg2 = clm.sign(p2);
+      await client.request({ command: 'submit', tx_blob: sg1.tx_blob }).catch(() => null);
+      await client.request({ command: 'submit', tx_blob: sg2.tx_blob }).catch(() => null);
+      const waitTx = async (hash) => waitPred(async () => {
+        const t = await client.request({ command: 'tx', transaction: hash }).catch(() => null);
+        return { ok: !!t?.result?.validated, t: t?.result };
+      }, 60000, 1500);
+      const v1 = await waitTx(sg1.hash);
+      const v2 = await waitTx(sg2.hash);
+      const m1 = v1.t ? anyMsgs(decodeHr(v1.t.meta)) : [];
+      record({ name: 'p1_claim_partial_claim_emit', pass: v1.t?.meta?.TransactionResult === 'tesSUCCESS' && m1.includes('Stranded refund claimed') && v2.t?.meta?.TransactionResult === 'tesSUCCESS',
+        engine: v1.t?.meta?.TransactionResult || 'timeout', gotMsg: m1.join('|') + ' ledgers ' + v1.t?.ledger_index + '/' + v2.t?.ledger_index, want: { msg: 'Stranded refund claimed', sameLedger: 'preferred' } });
+      const settled = await waitPred(async () => {
+        const k = await readK(hostS.classicAddress, aid);
+        return { ok: !k.PEN, k };
+      }, 60000);
+      await sleep(1500);
+      const st = await readStrand(hostS.classicAddress, aid, clm.classicAddress);
+      const lck1 = await readLck(hostS.classicAddress, NS_S);
+      const left = st ? BigInt('0x' + st.slice(0, 16)) : 0n;
+      record({ name: 'p1_claim_subtract_partial', pass: settled.ok && left === 300_000n && (lck1 - base) === 300_000n,
+        engine: 'ok', gotMsg: JSON.stringify({ strandLeft: String(left), lckOverBase: String(lck1 - base), sameLedger: v1.t?.ledger_index === v2.t?.ledger_index }),
+        want: { strandLeft: 300000, lckOverBase: 300000, note: 'claim cbak subtracts 0.5 XAH from a 0.8 XAH strand' } });
+      if (left > 0n) {
+        const c2 = await invokeFin(client, clm, hostS, aid);
+        record(expectCase('p1_claim_partial_second_claim', c2, { engine: 'tesSUCCESS', msgIncludes: 'Stranded refund claimed', finOnly: true }));
+        const gone = await waitPred(async () => ({ ok: !(await readStrand(hostS.classicAddress, aid, clm.classicAddress)) }), 60000);
+        await sleep(1500);
+        const lck2 = await readLck(hostS.classicAddress, NS_S);
+        record({ name: 'p1_claim_partial_drained', pass: gone.ok && lck2 === base, engine: 'ok', gotMsg: JSON.stringify({ gone: gone.ok, lck: String(lck2), base: String(base) }), want: { strand: 'absent', lck: 'back to base' } });
+      }
+    }
+
+    /* ===== wait for timed auctions ===== */
+    {
+      const exps = ['P5', 'S1', 'S2', 'S3', 'S4', 'S8', 'S9'].map((k) => A[k]).filter((a) => a && a.aid && a.exp != null).map((a) => BigInt(a.exp));
+      const maxExp = exps.reduce((m, e) => (e > m ? e : m), 0n);
+      log('p1 waiting for EXP', String(maxExp));
+      const ok = maxExp > 0n ? await waitLedgerPast(client, Number(maxExp) + 2, 420000) : true;
+      record({ name: 'p1_wait_timed_expired', pass: ok, engine: ok ? 'ok' : 'timeout', gotMsg: String(maxExp), want: { expired: true } });
+    }
+
+    /* ===== P5: timed with bids. the max bid Bids writes PRC = SP||HIGH (1M||2M), so it
+     * settles at SP with a 1M remainder (was the no-PRC legacy path, 2M price). ===== */
+    if (A.P5.aid) {
+      const a = A.P5;
+      const s0 = await bal(client, seller.classicAddress);
+      const t0 = await bal(client, treasury.classicAddress);
+      const w0 = await bal(client, winL.classicAddress);
+      const l0 = await readLck(host.classicAddress, NS);
+      const r = await invokeFin(client, admin, host, a.aid);
+      record(expectCase('p1_legacy_timed_ok', r, { engine: 'tesSUCCESS', msgIncludes: 'Settlement pending', finOnly: true }));
+      record({ name: 'p1_legacy_timed_emit3_no_remainder', pass: emitsOf(r) === 4, engine: 'ok', gotMsg: 'emit ' + emitsOf(r), want: { emit: 4, legs: 'URI, treasury, seller, remainder (price SP)' } });
+      const cl = await waitAidCleared(client, host.classicAddress, a.aid);
+      await sleep(1500);
+      const s1 = await bal(client, seller.classicAddress);
+      const t1 = await bal(client, treasury.classicAddress);
+      const w1 = await bal(client, winL.classicAddress);
+      const l1 = await readLck(host.classicAddress, NS);
+      const owner = await uriOwner(client, a.lot);
+      record({ name: 'p1_legacy_timed_split', pass: cl.ok && (s1 - s0) === 950_000n && (t1 - t0) === 50_000n && (w1 - w0) === 1_000_000n + RES_INC && owner === winL.classicAddress,
+        engine: 'ok', gotMsg: JSON.stringify({ cleared: cl.ok, seller: String(s1 - s0), treasury: String(t1 - t0), winner: String(w1 - w0), owner }),
+        want: { seller: 950000, treasury: 50000, winner: '1000000 remainder + reserve_inc', owner: 'winner' } });
+      record({ name: 'p1_legacy_timed_lck', pass: (l0 - l1) === 2_000_000n, engine: 'ok', gotMsg: JSON.stringify({ before: String(l0), after: String(l1) }), want: { delta: -2000000 } });
+    }
+
+    if (seedOk) {
+      /* ===== S1: PRC remainder XAH ===== */
+      if (A.S1.aid) {
+        const a = A.S1;
+        const s0 = await bal(client, seller.classicAddress);
+        const t0 = await bal(client, treasury.classicAddress);
+        const w0 = await bal(client, winS.classicAddress);
+        const l0 = await readLck(hostS.classicAddress, NS_S);
+        const r = await invokeFin(client, admin, hostS, a.aid);
+        record(expectCase('p1_prc_remainder_xah_ok', r, { engine: 'tesSUCCESS', msgIncludes: 'Settlement pending', finOnly: true }));
+        record({ name: 'p1_prc_remainder_xah_emit4', pass: emitsOf(r) === 4, engine: 'ok', gotMsg: 'emit ' + emitsOf(r), want: { emit: 4, legs: 'URI, treasury, seller, remainder' } });
+        const cl = await waitAidCleared(client, hostS.classicAddress, a.aid);
+        await sleep(1500);
+        const s1 = await bal(client, seller.classicAddress);
+        const t1 = await bal(client, treasury.classicAddress);
+        const w1 = await bal(client, winS.classicAddress);
+        const l1 = await readLck(hostS.classicAddress, NS_S);
+        record({ name: 'p1_prc_remainder_xah_split', pass: cl.ok && (s1 - s0) === 1_900_000n && (t1 - t0) === 100_000n && (w1 - w0) === 1_000_000n + RES_INC,
+          engine: 'ok', gotMsg: JSON.stringify({ cleared: cl.ok, keys: cl.keys, seller: String(s1 - s0), treasury: String(t1 - t0), winner: String(w1 - w0) }),
+          want: { seller: 1900000, treasury: 100000, winner: '1000000 + reserve_inc', note: 'price 2 XAH, max 3 XAH, fee 5% of price, URI Remit adds reserve_inc' } });
+        record({ name: 'p1_prc_remainder_xah_lck', pass: (l0 - l1) === 3_000_000n, engine: 'ok', gotMsg: JSON.stringify({ before: String(l0), after: String(l1) }), want: { delta: -3000000 } });
+      }
+
+      /* ===== S2: PRC remainder IOU ===== */
+      if (A.S2.aid) {
+        const a = A.S2;
+        const s0 = await iouBal(client, seller.classicAddress, ISO_AUC, issuer.classicAddress);
+        const t0 = await iouBal(client, treasury.classicAddress, ISO_AUC, issuer.classicAddress);
+        const w0 = await iouBal(client, winSI.classicAddress, ISO_AUC, issuer.classicAddress);
+        const l0 = await readIouLck(hostS.classicAddress, NS_S);
+        const r = await invokeFin(client, admin, hostS, a.aid);
+        record(expectCase('p1_prc_remainder_iou_ok', r, { engine: 'tesSUCCESS', msgIncludes: 'Settlement pending', finOnly: true }));
+        record({ name: 'p1_prc_remainder_iou_emit4', pass: emitsOf(r) === 4, engine: 'ok', gotMsg: 'emit ' + emitsOf(r), want: { emit: 4 } });
+        const cl = await waitAidCleared(client, hostS.classicAddress, a.aid);
+        await sleep(1500);
+        const s1 = await iouBal(client, seller.classicAddress, ISO_AUC, issuer.classicAddress);
+        const t1 = await iouBal(client, treasury.classicAddress, ISO_AUC, issuer.classicAddress);
+        const w1 = await iouBal(client, winSI.classicAddress, ISO_AUC, issuer.classicAddress);
+        const l1 = await readIouLck(hostS.classicAddress, NS_S);
+        record({ name: 'p1_prc_remainder_iou_split', pass: cl.ok && near(s1 - s0, 19) && near(t1 - t0, 1) && near(w1 - w0, 10) && near((s1 - s0) + (t1 - t0), 20),
+          engine: 'ok', gotMsg: JSON.stringify({ cleared: cl.ok, seller: s1 - s0, treasury: t1 - t0, winner: w1 - w0, high: P1.s2High }), want: { seller: 19, treasury: 1, winner: 10, feePlusSeller: 20 } });
+        record({ name: 'p1_prc_remainder_iou_lck', pass: near(l0 - l1, 30) && near(l1, 0), engine: 'ok', gotMsg: JSON.stringify({ before: l0, after: l1 }), want: { delta: -30, after: 0 } });
+      }
+
+      /* ===== S3: PRC snapshot mismatch -> settle on HIGH ===== */
+      if (A.S3.aid) {
+        const a = A.S3;
+        const s0 = await bal(client, seller.classicAddress);
+        const t0 = await bal(client, treasury.classicAddress);
+        const w0 = await bal(client, winS.classicAddress);
+        const r = await invokeFin(client, admin, hostS, a.aid);
+        record(expectCase('p1_prc_snapshot_mismatch_ok', r, { engine: 'tesSUCCESS', msgIncludes: 'Settlement pending', finOnly: true }));
+        const cl = await waitAidCleared(client, hostS.classicAddress, a.aid);
+        await sleep(1500);
+        const s1 = await bal(client, seller.classicAddress);
+        const t1 = await bal(client, treasury.classicAddress);
+        const w1 = await bal(client, winS.classicAddress);
+        record({ name: 'p1_prc_snapshot_mismatch_uses_high', pass: cl.ok && emitsOf(r) === 3 && (s1 - s0) === 1_900_000n && (t1 - t0) === 100_000n && (w1 - w0) === RES_INC,
+          engine: 'ok', gotMsg: JSON.stringify({ emit: emitsOf(r), seller: String(s1 - s0), treasury: String(t1 - t0), winner: String(w1 - w0), cleared: cl.ok }),
+          want: { emit: 3, seller: 1900000, treasury: 100000, winner: 'reserve_inc only', note: 'stale PRC ignored, price = HIGH 2 XAH' } });
+      }
+
+      /* ===== S4 + S5: PRC > HIGH NOPE, IFR gate, claim while IFR, PEN gate ===== */
+      if (A.S4.aid) {
+        const a = A.S4;
+        let r = await invokeFin(client, admin, hostS, a.aid);
+        record(expectCase('p1_prc_gt_high_nope', r, { engine: 'tecHOOK_REJECTED', msgIncludes: 'price state corrupt', finOnly: true }));
+        r = await seedRaw(asciiHex('PRC'), null, a.aid);
+        const r2 = await seedRaw(asciiHex('IFR'), '0001', a.aid);
+        record({ name: 'p1_ifr_seed', pass: seeded(r) && seeded(r2), engine: r2.engine, gotMsg: 'PRC deleted, IFR=1', want: { msg: 'state seeded' } });
+        r = await invokeFin(client, admin, hostS, a.aid);
+        record(expectCase('p1_ifr_blocks_settle', r, { engine: 'tecHOOK_REJECTED', msgIncludes: 'refunds in flight', finOnly: true }));
+        r = await invokeFin(client, winS, hostS, a.aid);
+        record(expectCase('p1_ifr_blocks_settle_winner', r, { engine: 'tecHOOK_REJECTED', msgIncludes: 'refunds in flight', finOnly: true }));
+        /* claim still runs while IFR is set */
+        const base = await readLck(hostS.classicAddress, NS_S);
+        const s1 = await seedRaw(asciiHex('LCK'), u64be(base + 400_000n), null);
+        const s2 = await seedRaw(strandKeyHex(clm.classicAddress), u64be(400_000n) + '00000000' + '00' + '00'.repeat(40), a.aid);
+        record({ name: 'p1_ifr_claim_seed', pass: seeded(s1) && seeded(s2), engine: s2.engine, gotMsg: 'strand 0.4 XAH for clm', want: { msg: 'state seeded' } });
+        const c = await invokeFin(client, clm, hostS, a.aid);
+        record(expectCase('p1_ifr_claim_still_ok', c, { engine: 'tesSUCCESS', msgIncludes: 'Stranded refund claimed', finOnly: true, emitMin: 1 }));
+        const gone = await waitPred(async () => {
+          const st = await readStrand(hostS.classicAddress, a.aid, clm.classicAddress);
+          const k = await readK(hostS.classicAddress, a.aid);
+          return { ok: !st && !k.PEN };
+        }, 60000);
+        await sleep(1500);
+        const lck2 = await readLck(hostS.classicAddress, NS_S);
+        record({ name: 'p1_ifr_claim_paid', pass: gone.ok && lck2 === base, engine: 'ok', gotMsg: JSON.stringify({ gone: gone.ok, lck: String(lck2), base: String(base) }), want: { strand: 'absent', lck: 'base' } });
+        /* PEN (current Bids single-slot refund in flight) still blocks settle */
+        r = await seedRaw(asciiHex('IFR'), null, a.aid);
+        const rp = await seedRaw(asciiHex('PEN'), '11'.repeat(32), a.aid);
+        record({ name: 'p1_pen_seed', pass: seeded(r) && seeded(rp), engine: rp.engine, gotMsg: 'IFR deleted, PEN seeded', want: { msg: 'state seeded' } });
+        r = await invokeFin(client, admin, hostS, a.aid);
+        record(expectCase('p1_pen_blocks_settle', r, { engine: 'tecHOOK_REJECTED', msgIncludes: 'refund in flight', finOnly: true }));
+        r = await softSubmit(submitAndWait(client, admin, {
+          TransactionType: 'Invoke', Account: admin.classicAddress, Destination: hostS.classicAddress,
+          HookParameters: [hp('CLR', '01'), hp('AID', a.aid)],
+        }));
+        record(expectCase('p1_pen_admin_clr', r, { engine: 'tesSUCCESS', msgIncludes: 'marker cleared', anyHook: true }));
+        /* Max bid: CLR bitmask 0x04 clears a stuck IFR in Finalise and Bids */
+        {
+          const clr = (v) => softSubmit(submitAndWait(client, admin, {
+            TransactionType: 'Invoke', Account: admin.classicAddress, Destination: hostS.classicAddress,
+            HookParameters: [hp('CLR', v), hp('AID', a.aid)],
+          }));
+          let q = await seedRaw(asciiHex('IFR'), '0002', a.aid);
+          let qr = await invokeFin(client, admin, hostS, a.aid);
+          record(expectCase('p3_ifr_seeded_blocks_settle', qr, { engine: 'tecHOOK_REJECTED', msgIncludes: 'refunds in flight', finOnly: true }));
+          qr = await clr('04');
+          const qm = decodeHr(qr.meta).map((h) => h.msg || '');
+          let qk = await readAidKeys(client, hostS.classicAddress, a.aid);
+          record({ name: 'p3_clr_04_clears_ifr', pass: seeded(q) && qr.engine === 'tesSUCCESS' && qm.filter((m) => m === 'marker cleared').length >= 2 && !qk.IFR,
+            engine: qr.engine, gotMsg: JSON.stringify({ msgs: qm, IFR: qk.IFR || null }), want: { msgs: 'marker cleared (Bids and Finalise)', IFR: 'deleted' } });
+          qr = await clr('06');
+          record(expectCase('p3_clr_06_noop_ok', qr, { engine: 'tesSUCCESS', msgIncludes: 'marker cleared', finOnly: true }));
+          q = await seedRaw(asciiHex('IFR'), '0001', a.aid);
+          qr = await clr('07');
+          qk = await readAidKeys(client, hostS.classicAddress, a.aid);
+          record({ name: 'p3_clr_07_all', pass: seeded(q) && qr.engine === 'tesSUCCESS' && !qk.IFR && !qk.PEN && !qk.SPEN, engine: qr.engine,
+            gotMsg: JSON.stringify({ IFR: qk.IFR || null, PEN: qk.PEN || null }), want: { IFR: 'deleted', PEN: 'deleted' } });
+          qr = await clr('08');
+          record(expectCase('p3_clr_08_bad', qr, { engine: 'tecHOOK_REJECTED', msgIncludes: 'CLR bad', anyHook: true }));
+          qr = await clr('00');
+          record(expectCase('p3_clr_00_bad', qr, { engine: 'tecHOOK_REJECTED', msgIncludes: 'CLR bad', anyHook: true }));
+        }
+        const s0b = await bal(client, seller.classicAddress);
+        const t0b = await bal(client, treasury.classicAddress);
+        const l0b = await readLck(hostS.classicAddress, NS_S);
+        r = await invokeFin(client, admin, hostS, a.aid);
+        record(expectCase('p1_gates_clear_settle_ok', r, { engine: 'tesSUCCESS', msgIncludes: 'Settlement pending', finOnly: true }));
+        const cl = await waitAidCleared(client, hostS.classicAddress, a.aid);
+        await sleep(1500);
+        const s1b = await bal(client, seller.classicAddress);
+        const t1b = await bal(client, treasury.classicAddress);
+        const l1b = await readLck(hostS.classicAddress, NS_S);
+        record({ name: 'p1_gates_clear_settle_legacy', pass: cl.ok && emitsOf(r) === 3 && (s1b - s0b) === 1_900_000n && (t1b - t0b) === 100_000n && (l0b - l1b) === 2_000_000n,
+          engine: 'ok', gotMsg: JSON.stringify({ emit: emitsOf(r), seller: String(s1b - s0b), treasury: String(t1b - t0b), lck: String(l0b - l1b), cleared: cl.ok }), want: { emit: 3, seller: 1900000, treasury: 100000, lck: -2000000 } });
+      }
+
+      /* ===== S8: retry skips WPAY (seller leg fails, remainder ok) ===== */
+      if (A.S8.aid) {
+        const a = A.S8;
+        record(expectCase('p1_retry_wpay_seller_depositauth', await acctSet(seller, 'SetFlag', ASF_DEPOSIT_AUTH), { engine: 'tesSUCCESS', anyHook: true }));
+        const w0 = await bal(client, winS2.classicAddress);
+        const l0 = await readLck(hostS.classicAddress, NS_S);
+        let r = await invokeFin(client, admin, hostS, a.aid);
+        record(expectCase('p1_retry_wpay_first', r, { engine: 'tesSUCCESS', msgIncludes: 'Settlement pending', finOnly: true }));
+        const firstEmit = emitsOf(r);
+        const st = await waitPred(async () => {
+          const k = await readK(hostS.classicAddress, a.aid);
+          return { ok: k.SSF === '01' && k.WPAY === '01' && k.TPAY === '01' && k.UOK === '01' && (!k.SPEN || k.SPEN === '00'), k };
+        }, 90000);
+        record({ name: 'p1_retry_wpay_state', pass: firstEmit === 4 && st.ok && !st.k.SPAY, engine: st.ok ? 'ok' : 'timeout', gotMsg: JSON.stringify({ emit: firstEmit, keys: st.k }), want: { emit: 4, SSF: 1, WPAY: 1, TPAY: 1, UOK: 1, SPAY: 'absent' } });
+        const w1 = await bal(client, winS2.classicAddress);
+        record({ name: 'p1_retry_wpay_remainder_paid', pass: (w1 - w0) === 1_000_000n + RES_INC, engine: 'ok', gotMsg: String(w1 - w0), want: { winner: '1000000 + reserve_inc (URI Remit)' } });
+        record(expectCase('p1_retry_wpay_seller_clear_depositauth', await acctSet(seller, 'ClearFlag', ASF_DEPOSIT_AUTH), { engine: 'tesSUCCESS', anyHook: true }));
+        const s0 = await bal(client, seller.classicAddress);
+        r = await invokeFin(client, admin, hostS, a.aid);
+        record(expectCase('p1_retry_wpay_retry', r, { engine: 'tesSUCCESS', msgIncludes: 'Settlement pending', finOnly: true }));
+        const cl = await waitAidCleared(client, hostS.classicAddress, a.aid);
+        await sleep(1500);
+        const s1 = await bal(client, seller.classicAddress);
+        const w2 = await bal(client, winS2.classicAddress);
+        const l1 = await readLck(hostS.classicAddress, NS_S);
+        record({ name: 'p1_retry_skips_wpay', pass: emitsOf(r) === 1 && cl.ok && (s1 - s0) === 1_900_000n && w2 === w1 && (l0 - l1) === 3_000_000n,
+          engine: 'ok', gotMsg: JSON.stringify({ retryEmit: emitsOf(r), cleared: cl.ok, seller: String(s1 - s0), winnerAfterRetry: String(w2 - w1), lck: String(l0 - l1) }),
+          want: { retryEmit: 1, seller: 1900000, winner: 0, lck: -3000000 } });
+      }
+
+      /* ===== S9: timed remainder strand (winner DepositAuth), claim, URI retry ===== */
+      if (A.S9.aid) {
+        const a = A.S9;
+        record(expectCase('p1_timed_strand_set_depositauth', await acctSet(winSD, 'SetFlag', ASF_DEPOSIT_AUTH), { engine: 'tesSUCCESS', anyHook: true }));
+        const s0 = await bal(client, seller.classicAddress);
+        const t0 = await bal(client, treasury.classicAddress);
+        const l0 = await readLck(hostS.classicAddress, NS_S);
+        let r = await invokeFin(client, admin, hostS, a.aid);
+        record(expectCase('p1_timed_strand_first', r, { engine: 'tesSUCCESS', msgIncludes: 'Settlement pending', finOnly: true }));
+        const st = await waitPred(async () => {
+          const k = await readK(hostS.classicAddress, a.aid);
+          return { ok: k.SSF === '01' && k.WPAY === '01' && k.SPAY === '01' && k.TPAY === '01' && (!k.SPEN || k.SPEN === '00'), k };
+        }, 90000);
+        const strand = await readStrand(hostS.classicAddress, a.aid, winSD.classicAddress);
+        const s1 = await bal(client, seller.classicAddress);
+        const t1 = await bal(client, treasury.classicAddress);
+        const l1 = await readLck(hostS.classicAddress, NS_S);
+        record({ name: 'p1_timed_strand_state', pass: emitsOf(r) === 4 && st.ok && !st.k.UOK && strand && strand.slice(0, 16) === u64be(1_000_000),
+          engine: st.ok ? 'ok' : 'timeout', gotMsg: JSON.stringify({ emit: emitsOf(r), keys: st.k, strand }), want: { emit: 4, SSF: 1, WPAY: 1, SPAY: 1, TPAY: 1, UOK: 'absent (URI blocked by DepositAuth too)', strand: 1000000 } });
+        record({ name: 'p1_timed_strand_money_legs', pass: (s1 - s0) === 1_900_000n && (t1 - t0) === 100_000n && (l0 - l1) === 2_000_000n,
+          engine: 'ok', gotMsg: JSON.stringify({ seller: String(s1 - s0), treasury: String(t1 - t0), lck: String(l0 - l1) }), want: { seller: 1900000, treasury: 100000, lck: -2000000, note: 'remainder 1 XAH stays in LCK as strand' } });
+        record(expectCase('p1_timed_strand_clear_depositauth', await acctSet(winSD, 'ClearFlag', ASF_DEPOSIT_AUTH), { engine: 'tesSUCCESS', anyHook: true }));
+        const c = await invokeFin(client, winSD, hostS, a.aid);
+        record(expectCase('p1_timed_strand_claim_before_commit', c, { engine: 'tesSUCCESS', msgIncludes: 'Stranded refund claimed', finOnly: true }));
+        const gone = await waitPred(async () => {
+          const s = await readStrand(hostS.classicAddress, a.aid, winSD.classicAddress);
+          const k = await readK(hostS.classicAddress, a.aid);
+          return { ok: !s && !k.PEN };
+        }, 60000);
+        const l2 = await readLck(hostS.classicAddress, NS_S);
+        record({ name: 'p1_timed_strand_claim_paid', pass: gone.ok && (l1 - l2) === 1_000_000n, engine: 'ok', gotMsg: JSON.stringify({ gone: gone.ok, lck: String(l1 - l2) }), want: { lck: -1000000 } });
+        r = await invokeFin(client, seller, hostS, a.aid);
+        record(expectCase('p1_timed_strand_uri_retry', r, { engine: 'tesSUCCESS', msgIncludes: 'Settlement pending', finOnly: true }));
+        const cl = await waitAidCleared(client, hostS.classicAddress, a.aid);
+        const owner = await waitUriOwner(client, a.lot, winSD.classicAddress, 30000);
+        record({ name: 'p1_timed_strand_retry_uri_only', pass: emitsOf(r) === 1 && cl.ok && owner, engine: 'ok', gotMsg: JSON.stringify({ emit: emitsOf(r), cleared: cl.ok, owner }), want: { emit: 1, cleared: true, URI: 'winner' } });
+      }
+
+      /* ===== seed host LCK reconciliation: no open escrow, no strand left ===== */
+      {
+        await sleep(3000);
+        const lx = await readLck(hostS.classicAddress, NS_S);
+        const li = await readIouLck(hostS.classicAddress, NS_S);
+        record({ name: 'p1_seed_host_lck_reconciled', pass: lx === 0n && near(li, 0), engine: 'ok', gotMsg: JSON.stringify({ LCK: String(lx), IOU_LCK: li }), want: { LCK: 0, IOU_LCK: 0, note: 'all seed host auctions settled and strands claimed' } });
+      }
+    }
+  }
+
+  /* Missing FEE -> 100% seller: clear FEE by... can't clear via admin easily.
+     Judgment covered: set FEE missing by never setting on fresh host - skip (already tested FEE=0).
      Document as covered by FEE=0 + design. */
   record({
     name: 'fin_missing_fee_equiv_fee0_documented',
     pass: true,
     engine: 'ok',
-    gotMsg: 'Missing FEE or TREASURY → 100% seller (same as FEE=0 path exercised)',
+    gotMsg: 'Missing FEE or TREASURY -> 100% seller (same as FEE=0 path exercised)',
     want: { documented: true },
   });
 

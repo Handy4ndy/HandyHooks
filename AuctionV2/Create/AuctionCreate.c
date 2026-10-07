@@ -1,12 +1,12 @@
 /**
- * Auction House V2 — AuctionCreate.c
+ * Auction House V2 - AuctionCreate.c
  *
  * Create auction via Remit of exactly one URIToken to host.
  * One fat file; hookapi.h only. All logic in hook()/cbak().
  *
  * Install: param-free. Invokes and Payments passthrough.
  * Remits: valid Create only; invalid/non-Create Remits reject (no passthrough).
- * Outgoing host → ok.
+ * Outgoing host -> ok.
  *
  * Seller foreign ns = account ID (20) zero-padded to 32 (same as AuctionSub):
  *   SUBEXP (8) uint64 BE, ACTIVE (2) uint16 BE, CAP (2) uint16 BE
@@ -28,7 +28,7 @@
  *   1) URIToken must not be burnable (lsfBurnable / tfBurnable bit).
  *   2) Seller AccountRoot must not have remits disabled
  *      (lsfDisallowIncomingRemit / asfDisallowIncomingRemit).
- *   3) Seller must not have DepositAuth (lsfDepositAuth) — entry gate
+ *   3) Seller must not have DepositAuth (lsfDepositAuth) - entry gate
  *      so Finalise XAH Payment / Remit payouts can land.
  *   4) IOU issuer only (XAH has no issuer): refuse a TransferRate that
  *      is present and is neither 0 nor the parity sentinel, a global
@@ -39,9 +39,9 @@
  * tfSetNoRipple). Stamps current FEE and TREASURY onto the auction.
  * Fail-closed on emit / any required state write / ACTIVE bump failure.
  *
- * Host local state (state/state_set — share HookNamespace with Bids/Finalise):
+ * Host local state (state/state_set - share HookNamespace with Bids/Finalise):
  *   TAC (4 BE uint32) total auctions created; bump +1 after ACTIVE ok.
- *   Missing TAC → 0. uint32 wrap → fail-closed.
+ *   Missing TAC -> 0. uint32 wrap -> fail-closed.
  */
 #define HAS_CALLBACK
 #include "hookapi.h"
@@ -62,7 +62,7 @@
 #define LT_URI_TOKEN 0x0055U
 #endif
 #ifndef LSF_BURNABLE
-/* URIToken lsfBurnable / tfBurnable — xahaud ls_flags.h */
+/* URIToken lsfBurnable / tfBurnable - xahaud ls_flags.h */
 #define LSF_BURNABLE 0x00000001U
 #endif
 #ifndef LSF_DISALLOW_INCOMING_REMIT
@@ -74,19 +74,19 @@
 #define LSF_DEPOSIT_AUTH 0x01000000U
 #endif
 #ifndef LSF_GLOBAL_FREEZE
-/* AccountRoot lsfGlobalFreeze — rshooks vendor xahaud-hook/ls_flags.h */
+/* AccountRoot lsfGlobalFreeze - rshooks vendor xahaud-hook/ls_flags.h */
 #define LSF_GLOBAL_FREEZE 0x00400000U
 #endif
 #ifndef LSF_ALLOW_TRUSTLINE_CLAWBACK
-/* AccountRoot lsfAllowTrustLineClawback — same ls_flags.h (not asf 17 shifted) */
+/* AccountRoot lsfAllowTrustLineClawback - same ls_flags.h (not asf 17 shifted) */
 #define LSF_ALLOW_TRUSTLINE_CLAWBACK 0x00001000U
 #endif
 #ifndef LSF_LOW_FREEZE
-/* RippleState lsfLowFreeze — freeze set by the low account */
+/* RippleState lsfLowFreeze - freeze set by the low account */
 #define LSF_LOW_FREEZE 0x00400000U
 #endif
 #ifndef LSF_HIGH_FREEZE
-/* RippleState lsfHighFreeze — freeze set by the high account */
+/* RippleState lsfHighFreeze - freeze set by the high account */
 #define LSF_HIGH_FREEZE 0x00800000U
 #endif
 #ifndef LSF_LOW_DEEP_FREEZE
@@ -256,7 +256,7 @@ int64_t cbak(uint32_t what)
         state_foreign_set(&one, 1, "TSF", 3, aid, 32, hook_acc, 20);
     }
 
-    /* PW3-M05: Remit URI→SLR map-before-emit. Finalise/M01 backup if no emit. */
+    /* PW3-M05: Remit URI->SLR map-before-emit. Finalise/M01 backup if no emit. */
     {
         uint8_t uri[32];
         uint8_t seller[20];
@@ -356,7 +356,7 @@ int64_t cbak(uint32_t what)
                                 *b++ = (uint8_t)((fee >> 0) & 0xFFU);
                                 if (uri_len > 0 && uri_len <= 384U)
                                 {
-                                    /* PW3-M05: map BEFORE emit; map fail → no emit */
+                                    /* PW3-M05: map BEFORE emit; map fail -> no emit */
                                     uint8_t emh[32];
                                     if (util_sha512h(SBUF(emh), uri_txn,
                                                      uri_len) != 32)
@@ -439,7 +439,7 @@ int64_t hook(uint32_t reserved)
                             int64_t rc = slot_count(12);
                             if (rc <= 0)
                                 NOPE("Remit Amounts unreadable");
-                            /* KVT #13 (Andy locked): host gen-0 Remit carries at most
+                            /* KVT #13: host gen-0 Remit carries at most
                              * 3 Amounts. Above that fail closed with a named NOPE.
                              * Outer GUARD covers ri < rc with rc <= 3. */
                             if (rc > 3)
@@ -456,7 +456,7 @@ int64_t hook(uint32_t reserved)
                                     int64_t al = slot(SBUF(ab), 14);
                                     if (al == 8)
                                     {
-                                        /* Keep STAmount wire bits — match bal UINT64_FROM_BUF */
+                                        /* Keep STAmount wire bits - match bal UINT64_FROM_BUF */
                                         uint64_t d = UINT64_FROM_BUF(ab);
                                         if (d > 0ULL)
                                         {
@@ -825,7 +825,7 @@ int64_t hook(uint32_t reserved)
 
             if (clen == 3)
             {
-                /* ISO 3-letter → XRPL 20-byte (code at bytes 12..14) */
+                /* ISO 3-letter -> XRPL 20-byte (code at bytes 12..14) */
                 currency[12] = cur_raw[0];
                 currency[13] = cur_raw[1];
                 currency[14] = cur_raw[2];

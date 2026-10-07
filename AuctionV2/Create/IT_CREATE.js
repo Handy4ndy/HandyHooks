@@ -1,5 +1,5 @@
 /**
- * Auction House V2 Create — full gap-covering matrix (xahau.js).
+ * Auction House V2 Create - full gap-covering matrix (xahau.js).
  * Sub setup + Create rejects/happy paths. Labels: setup_* vs create_*.
  *
  * Run: node IT_CREATE.js
@@ -697,7 +697,7 @@ async function main() {
       });
     }
   }
-  /* Clear flag → seller remits ok */
+  /* Clear flag -> seller remits ok */
   {
     const clr = await softSubmit(submitAndWait(client, seller1, {
       TransactionType: 'AccountSet',
@@ -1067,7 +1067,7 @@ async function main() {
     }));
   }
   {
-    /* REVOKE seller5 → same gate as expired/cleared */
+    /* REVOKE seller5 -> same gate as expired/cleared */
     const rev = await invokeAdmin(client, admin, host, 'REVOKE', accHex(seller5.classicAddress));
     record(expectCase('setup_revoke_seller5', rev, { engine: 'tesSUCCESS', msgIncludes: 'REVOKE' }));
     const lot = await mintUT(client, seller5, { burnable: false });
@@ -1423,9 +1423,9 @@ async function main() {
     }));
   }
 
-  /* ---- PW-C01: TrustSet fail → TSF + Remit URI back ---- */
+  /* ---- PW-C01: TrustSet fail -> TSF + Remit URI back ---- */
   {
-    const ghost = genWallet(); /* never funded → TrustSet tecNO_DST */
+    const ghost = genWallet(); /* never funded -> TrustSet tecNO_DST */
     const activeBefore = parseSeller(await readSellerState(client, host.classicAddress, seller3.classicAddress));
     const lot = await mintUT(client, seller3, { burnable: false });
     const r = await createRemit(client, seller3, host, lot, {
@@ -1499,7 +1499,7 @@ async function main() {
         name: 'create_trustset_fail_active_dec',
         pass: a0 != null && a1 != null && a1 === a0,
         engine: 'ok',
-        gotMsg: JSON.stringify({ before: a0, after: a1, note: 'bump then fail-dec → net 0' }),
+        gotMsg: JSON.stringify({ before: a0, after: a1, note: 'bump then fail-dec -> net 0' }),
         want: { active_net: 0 },
       });
       /* Wait for Remit-back success: URI owner = seller, AID clear */

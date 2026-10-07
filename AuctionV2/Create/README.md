@@ -52,11 +52,11 @@ Create copies the current host `FEE` and `TREASURY` onto the auction. Finalise u
 
 ## Host local state
 
-- `TAC` (4 BE uint32): total auctions created; +1 after ACTIVE ok. Missing → 0; wrap → fail-closed.
+- `TAC` (4 BE uint32): total auctions created; +1 after ACTIVE ok. Missing -> 0; wrap -> fail-closed.
 
 ## Happy paths
 
-- Subscribed seller Remits one URIToken + `DUR` (+ opts) → auction open, `ST=1`, TAC bumped
+- Subscribed seller Remits one URIToken + `DUR` (+ opts) -> auction open, `ST=1`, TAC bumped
 - IOU Create auto-TrustSets host line with NoRipple when needed
 
 ## Important NOPE
@@ -64,7 +64,7 @@ Create copies the current host `FEE` and `TREASURY` onto the auction. Finalise u
 - `Remit must be to host` / `URITokenIDs must contain exactly one token`
 - `URIToken not found` / burnable / seller remits disabled / DepositAuth
 - Subscription expired or at CAP
-- `DUR` out of range; `BN` ≤ `SP` when both set
+- `DUR` out of range; `BN` <= `SP` when both set
 - TrustSet / state write failures
 - Host gen-0 outflow: `Insufficient spendable float`
 - Host gen-0 Remit with more than 3 Amounts: `too many Remit amounts`

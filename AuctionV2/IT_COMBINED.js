@@ -1,5 +1,5 @@
 /**
- * Handy Hooks ~ Auction House V2 — publishable ONE-HOST testnet integration path.
+ * Handy Hooks ~ Auction House V2 - publishable ONE-HOST testnet integration path.
  * Fresh faucet host; Sub+Create+Bids+Finalise; shared NS; ADMIN override.
  * Happy chain + SUB+AID reject + stranded-refund non-blocking + seller cancel.
  *
@@ -440,14 +440,14 @@ function expectCase(name, r, want) {
 }
 
 async function main() {
-  log('combined one-host start', { networkId: NETWORK_ID, ns: NS.slice(0, 16) + '…' });
+  log('combined one-host start', { networkId: NETWORK_ID, ns: NS.slice(0, 16) + '...' });
   log('wasm pins', OUT.wasm);
 
   const client = new Client(WS);
   await client.connect();
   log('connected', WS);
 
-  log('funding…');
+  log('funding...');
   const bank = await faucetWallet();
   const host = genWallet();
   const admin = genWallet();
@@ -730,7 +730,7 @@ async function main() {
       record(
         expectCase('onehost_strand_bid_A', b1, {
           engine: 'tesSUCCESS',
-          msgIncludes: 'Bid accepted',
+          msgIncludes: 'Max bid accepted',
           bidsOnly: true,
         }),
       );
@@ -751,7 +751,7 @@ async function main() {
       record(
         expectCase('onehost_strand_bid_B_outbid', b2, {
           engine: 'tesSUCCESS',
-          msgIncludes: 'Bid accepted',
+          msgIncludes: 'Max bid accepted',
           bidsOnly: true,
         }),
       );
@@ -776,7 +776,7 @@ async function main() {
         want: { ST: '01', note: 'auction still open; RFD may appear after refund cbak fail' },
       });
 
-      /* Wait PEN clear if in flight, then C bids — must NOT be blocked by stranded RFD */
+      /* Wait PEN clear if in flight, then C bids - must NOT be blocked by stranded RFD */
       for (let i = 0; i < 20; i++) {
         const k = await readAidKeys(client, host.classicAddress, aid);
         if (!k.PEN && !k.SPEN) break;
@@ -794,7 +794,7 @@ async function main() {
         name: 'onehost_strand_bid_C_not_blocked',
         pass:
           b3.engine === 'tesSUCCESS' &&
-          bidsMsgs.some((m) => m.includes('Bid accepted')) &&
+          bidsMsgs.some((m) => m.includes('Max bid accepted')) &&
           !blocked,
         engine: b3.engine,
         hash: b3.hash,
@@ -803,7 +803,7 @@ async function main() {
           preRFD: keysPreC.RFD || null,
           prePEN: keysPreC.PEN || null,
         }),
-        want: { engine: 'tesSUCCESS', msg: 'Bid accepted', not: 'stranded refund claim first' },
+        want: { engine: 'tesSUCCESS', msg: 'Max bid accepted', not: 'stranded refund claim first' },
       });
 
       /* Clear DepositAuth; A claims stranded refund if RFD/strand present */
@@ -824,7 +824,7 @@ async function main() {
         claim.engine === 'tesSUCCESS' &&
         (claimMsgs.some((m) => /strand|refund|claim|pending/i.test(m)) ||
           claimMsgs.some((m) => m.includes('Settlement')));
-      /* Soft: if no strand formed (refund raced ok), claim may settle or NOPE — still record */
+      /* Soft: if no strand formed (refund raced ok), claim may settle or NOPE - still record */
       record({
         name: 'onehost_strand_claim_or_noop',
         pass: claim.engine === 'tesSUCCESS' || claim.engine === 'tecHOOK_REJECTED',
@@ -933,11 +933,11 @@ async function main() {
   save();
 
   /* Ship-friendly markdown companion */
-  const md = `# Auction House V2 — testnet path (one host)
+  const md = `# Auction House V2 - testnet path (one host)
 
 **Handy Hooks ~ Auction House** public V2. NetworkID **${NETWORK_ID}** (\`xahau-test.net\`).
 
-Generated: ${OUT.finished}
+Generated: ${OUT.finished} (UTC). Run 7 October 2026 (UK time) on the current release pins.
 
 ## Host
 
@@ -984,7 +984,7 @@ Full machine-readable log: \`IT_COMBINED.json\`.
 1. One fresh host installs Sub+Create+Bids+Finalise with **ADMIN override** and shared namespace.
 2. Seller subscribes, Creates a URIToken auction, buy-now settles, Finalise pays seller+treasury, AID clears.
 3. Payment with both \`SUB\` and \`AID\` is rejected.
-4. After a forced stranded outbid refund (DepositAuth), a **later bid is still accepted** (not frozen).
+4. After a forced stranded outbid refund (DepositAuth), a **later max bid is still accepted** (not frozen).
 5. Seller cancel (\`CNCL\`) returns the lot when open with no bids.
 
 Re-run: \`node IT_COMBINED.js\` from the Auction House V2 folder (xahau.js).

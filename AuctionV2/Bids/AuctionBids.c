@@ -1,52 +1,75 @@
 /**
- * Auction House V2 — AuctionBids.c
+ * Auction House V2 - AuctionBids.c
  *
  * Bid / buy-now via Payment to host with otxn param AID (32-byte auction ns).
  * One fat file; hookapi.h only. All logic in hook()/cbak().
  *
  * Install: param-free for bids. Shares the Payment+Remit+Invoke HookOn
  * with the set (Sub passthrough when no SUB; Bids passthrough when no AID).
- * KVT #6: an Invoke that carries CLR is an ADMIN clear of stuck PEN/SPEN.
+ * KVT #6: an Invoke that carries CLR is an ADMIN clear of stuck PEN/SPEN
+ * (CLR bitmask 0x01 PEN, 0x02 SPEN, 0x04 IFR, values 0x01 to 0x07).
  * Other Invokes stay passthrough. HookOn is not widened.
  *
  * ---- Judgment calls (Finalise-friendly defaults) ----
- * 1) First bid: amount >= SP (missing SP → 0; still require amount > 0).
- * 2) Later bids: if MB set → amount >= HIGH+MB; else amount > HIGH.
- * 3) Buy-now: if BN set and amount >= BN → accept payment, refund any prior
- *    high bidder (full) including self seat on self-BN, Remit URIToken from
+ * 1) Max bid: every bid is a hidden max. HIGH = escrowed max of
+ *    the seat, PRC = visible price || HIGH snapshot (16). First bid needs
+ *    amount >= SP (missing SP: any positive amount), price = SP if set,
+ *    else the amount.
+ * 2) Later bids need amount >= C + MB (MB set) or amount > C (no MB),
+ *    C = current price. amount > HIGH: outbid, price = min(amount,
+ *    HIGH + inc), prior refunded, DONE Max bid accepted with prior refund.
+ *    amount <= HIGH: underbid (tie goes to the incumbent), seat unchanged,
+ *    price = min(amount + inc, HIGH), amount refunded to the challenger
+ *    with its own tag, DONE Bid did not exceed current max bid, payment
+ *    returned. inc = MB, else 1 drop (XAH), else 0 with strict greater (IOU).
+ *    Bid refunds are tracked per refund: map flag RMAP_IFR and AID key IFR
+ *    (uint16 BE in flight count), no PEN. Underbids NOPE at IFR >= 4,
+ *    outbids are never capped. A refund-causing bid NOPEs host float low
+ *    unless host XAH balance >= XAH LCK + 2 XAH.
+ * 3) Buy-now: if BN set and amount >= BN -> accept payment, refund any prior
+ *    high bidder (full), Remit URIToken from
  *    host to buy-now winner, set ST=2 (lot settled / no further bids). Seller
- *    payment claimed via Finalise later — do NOT pay seller here. Fail-closed
+ *    payment claimed via Finalise later - do NOT pay seller here. Fail-closed
  *    if refund or URI Remit emit fails. Also set BNW=1 and clear URI custody
  *    key (lot left host).
  * 4) HIGH stores actual paid principal (XAH drops BE, or IOU XFL bit-pattern),
  *    same encoding as Create SP/MB/BN. WIN = 20-byte bidder. BCNT = uint32 BE.
  * 5) Outbid refund: XAH = Payment (with WDT if stored); IOU = Remit Amounts.
- *    LCK does NOT subtract prior in the bid otxn — only on refund cbak success.
- *    emit() failure → rollback. No fee-net. No soft-close. No auto-RETRY.
- * 6) Already-high rebid rejected unless this Payment also hits buy-now
- *    (self-BN refunds prior seat to self via same refund/cbak path as outbid).
+ *    LCK does NOT subtract prior in the bid otxn - only on refund cbak success.
+ *    emit() failure -> rollback. No fee-net. No soft-close. No auto-RETRY.
+ * 6) Max bid self-raise: a Payment from the current WIN is a top-up.
+ *    T = HIGH + amount. The amount must be >= MB when MB is set (XAH without
+ *    MB: any amount, 1 drop minimum). IOU without MB: T must compare strictly
+ *    greater than HIGH. No refund, no emit, LCK += amount, HIGH = T, visible
+ *    price unchanged: PRC = C || T where C = PRC price if the PRC snapshot
+ *    equals HIGH, else HIGH. DONE Max bid raised. If BN is set and T >= BN
+ *    the self-raise is a buy-now at BN: PRC = BN || T, URI Remit only (no
+ *    self refund), overpay T - BN returns at Finalise (remainder leg).
+ *    Every accepted path writes PRC (16 bytes, price || HIGH snapshot).
+ *    Buy-now by a non-self bidder: PRC = BN || P, overpay P - BN returns
+ *    at Finalise.
  * 7) Seller (SLR) cannot bid. Host cannot bid.
  * 8) Bidder AccountRoot must NOT have asfDisallowIncomingRemit /
  *    LSF_DISALLOW_INCOMING_REMIT so Finalise / buy-now Remits can reach them.
  * 9) Bidder must NOT have DepositAuth at bid entry (entry gate). Do NOT block
- *    outbid if prior later sets DepositAuth — emit refund; on cbak fail strand
+ *    outbid if prior later sets DepositAuth - emit refund; on cbak fail strand
  *    RFD/RFDA under AID (claim via Finalise).
  * 10) If bidder has lsfRequireDestTag, bid Payment MUST carry DestinationTag;
- *     store as WDT (4 BE) with WIN. Missing tag → NOPE. Refund uses stored WDT.
+ *     store as WDT (4 BE) with WIN. Missing tag -> NOPE. Refund uses stored WDT.
  * 11) Payment without AID / not to host / Invoke / Remit / outgoing /
- *     emitted re-entry → passthrough.
- * 12) ST must be 1 (open). Missing auction / ST!=1 / expired → reject.
+ *     emitted re-entry -> passthrough.
+ * 12) ST must be 1 (open). Missing auction / ST!=1 / expired -> reject.
  * 13) Currency must match Create CUR+ISS (omit = XAH). Partial pays rejected.
  *
  * Create AID keys read: ST, EXP, SP, MB, BN, CUR, ISS, SLR, URI, WDT, RFD, PEN
- * Bids AID keys written: HIGH, WIN, BCNT, WDT; on buy-now set SPEN (URI
+ * Bids AID keys written: HIGH, WIN, BCNT, WDT, PRC, IFR; on buy-now set SPEN (URI
  * [+REFUND]); ST=2/BNW/URI clear/TBN only on URI cbak success (C02). On
  * refund-only emit PEN; on cbak emit-fail write the strand first, then
  * RFD+RFDA(+RFDT) and clear PEN only if that write returns the full
  * length. A short write leaves PEN and sets LCKU+SSF (no RFD).
- * ok+under → LCKU+SSF (no RFD); URI cbak fail → SSF
+ * ok+under -> LCKU+SSF (no RFD); URI cbak fail -> SSF
  *
- * Host local state (state/state_set — share HookNamespace with Create/Finalise):
+ * Host local state (state/state_set - share HookNamespace with Create/Finalise):
  *   TBD (4 BE uint32) total accepted normal bids (not buy-now)
  *   TBN (4 BE uint32) total buy-now settles
  *   LCK (8 BE drops) locked XAH principal; +pay on accept; -prior only on
@@ -54,13 +77,13 @@
  *   IOU LCK: key = sha512Half(CUR||ISS) (32), value = XFL 8-byte bit pattern
  *   Refund cbak map: key=emit hash (32), value=AID(32)|amt(8)|prior(20)|wdt(4)|flags(1)
  *     flags bit0=has_wdt, bit1=is_claim (Finalise sets), bit2=is_iou
- *   Missing → 0. uint32 wrap / LCK under/overflow → fail-closed.
+ *   Missing -> 0. uint32 wrap / LCK under/overflow -> fail-closed.
  *
- * Judgment (emit→AID link): store pending map keyed by emit hash (not etxn_nonce
+ * Judgment (emit->AID link): store pending map keyed by emit hash (not etxn_nonce
  * alone). cbak reads otxn_id as emit hash, loads map, then LCK-/strand.
  * Reject a new bid while PEN/SPEN is in flight. A stranded refund does not
  * block later bids; the owed bidder claims it on Finalise.
- * PW4-H01 A2: refund cbak ok+LCK-under → clear PEN/SPEN, set LCKU+SSF, no RFD
+ * PW4-H01 A2: refund cbak ok+LCK-under -> clear PEN/SPEN, set LCKU+SSF, no RFD
  * (forensic only). Bids NOPE while LCKU. Emit-fail writes the strand before
  * clearing PEN. A failed strand write leaves PEN set.
  */
@@ -107,6 +130,9 @@
 #define RMAP_IS_IOU   0x04U
 #define RMAP_IS_URI   0x08U
 #define RMAP_IS_STRAND 0x10U
+/* Max bid: tracked bid refund (underbid or outbid), counted in IFR */
+#define RMAP_IFR      0x20U
+#define IFR_CAP       4U
 #define RMAP_LEN      65U
 /* Per-bidder stranded refund under the AID namespace.
  * key = 0x52 || account || zeros. value = amt(8) tag(4) flags(1) cur(20) iss(20). */
@@ -131,6 +157,42 @@ static const uint8_t BAKED_ADMIN_FIN[20] = {
     0xF6U, 0x64U, 0x01U, 0xB8U, 0xCDU, 0xA8U, 0x8AU, 0x71U, 0x14U, 0x09U
 };
 
+
+/* Refund no longer in flight. Tracked (RMAP_IFR) maps: IFR -= 1, delete
+ * at 0, never touch PEN/SPEN. Legacy and buy-now maps: clear PEN and the
+ * SPEN refund bit as before. */
+#define INFLIGHT_DONE()                                                      \
+    {                                                                        \
+        if (is_ifr)                                                          \
+        {                                                                    \
+            uint8_t ib[2];                                                   \
+            if (state_foreign(ib, 2, "IFR", 3, aid, 32, hook_acc, 20) == 2)  \
+            {                                                                \
+                uint16_t n = (uint16_t)UINT16_FROM_BUF(ib);                  \
+                if (n <= 1U)                                                 \
+                    state_foreign_set(0, 0, "IFR", 3, aid, 32, hook_acc, 20);\
+                else                                                         \
+                {                                                            \
+                    n = (uint16_t)(n - 1U);                                  \
+                    UINT16_TO_BUF(ib, n);                                    \
+                    state_foreign_set(ib, 2, "IFR", 3, aid, 32, hook_acc, 20);\
+                }                                                            \
+            }                                                                \
+        }                                                                    \
+        else                                                                 \
+        {                                                                    \
+            uint8_t sp = 0;                                                  \
+            state_foreign_set(0, 0, "PEN", 3, aid, 32, hook_acc, 20);        \
+            if (state_foreign(&sp, 1, "SPEN", 4, aid, 32, hook_acc, 20) == 1)\
+            {                                                                \
+                sp = (uint8_t)(sp & (uint8_t)~SPEN_BIT_REFUND);              \
+                if (sp == 0)                                                 \
+                    state_foreign_set(0, 0, "SPEN", 4, aid, 32, hook_acc, 20);\
+                else                                                         \
+                    state_foreign_set(&sp, 1, "SPEN", 4, aid, 32, hook_acc, 20);\
+            }                                                                \
+        }                                                                    \
+    }
 
 int64_t cbak(uint32_t what)
 {
@@ -167,6 +229,7 @@ int64_t cbak(uint32_t what)
     int is_claim = (flags & RMAP_IS_CLAIM) ? 1 : 0;
     int is_iou = (flags & RMAP_IS_IOU) ? 1 : 0;
     int is_uri = (flags & RMAP_IS_URI) ? 1 : 0;
+    int is_ifr = (flags & RMAP_IFR) ? 1 : 0;
 
     int ok = 0;
     if (what == 0)
@@ -233,7 +296,7 @@ int64_t cbak(uint32_t what)
     }
 
     /* -------- Refund / claim leg (PW4-H01 A2; L5 superseded) -------- */
-    /* Clear PEN/SPEN after successful LCK-. ok+under → forensic LCKU+SSF,
+    /* Clear PEN/SPEN after successful LCK-. ok+under -> forensic LCKU+SSF,
      * no RFD/RFDA (money already applied). Emit-fail still strands RFD. */
 
     if (ok)
@@ -248,19 +311,8 @@ int64_t cbak(uint32_t what)
                 || state_foreign(SBUF(issuer), "ISS", 3, aid, 32, hook_acc, 20)
                    != 20)
             {
-                /* PW4-H01 A2: money applied + LCK under → forensic only, no RFD */
-                state_foreign_set(0, 0, "PEN", 3, aid, 32, hook_acc, 20);
-                {
-                    uint8_t sp = 0;
-                    if (state_foreign(&sp, 1, "SPEN", 4, aid, 32, hook_acc, 20) == 1)
-                    {
-                        sp = (uint8_t)(sp & (uint8_t)~SPEN_BIT_REFUND);
-                        if (sp == 0)
-                            state_foreign_set(0, 0, "SPEN", 4, aid, 32, hook_acc, 20);
-                        else
-                            state_foreign_set(&sp, 1, "SPEN", 4, aid, 32, hook_acc, 20);
-                    }
-                }
+                /* PW4-H01 A2: money applied + LCK under -> forensic only, no RFD */
+                INFLIGHT_DONE();
                 {
                     uint8_t one = 1;
                     state_foreign_set(&one, 1, "LCKU", 4, aid, 32, hook_acc, 20);
@@ -280,19 +332,8 @@ int64_t cbak(uint32_t what)
                 }
                 if (util_sha512h(SBUF(iou_lck_key), SBUF(pre)) != 32)
                 {
-                    /* PW4-H01 A2: money applied + LCK under → forensic only, no RFD */
-                    state_foreign_set(0, 0, "PEN", 3, aid, 32, hook_acc, 20);
-                    {
-                        uint8_t sp = 0;
-                        if (state_foreign(&sp, 1, "SPEN", 4, aid, 32, hook_acc, 20) == 1)
-                        {
-                            sp = (uint8_t)(sp & (uint8_t)~SPEN_BIT_REFUND);
-                            if (sp == 0)
-                                state_foreign_set(0, 0, "SPEN", 4, aid, 32, hook_acc, 20);
-                            else
-                                state_foreign_set(&sp, 1, "SPEN", 4, aid, 32, hook_acc, 20);
-                        }
-                    }
+                    /* PW4-H01 A2: money applied + LCK under -> forensic only, no RFD */
+                    INFLIGHT_DONE();
                     {
                         uint8_t one = 1;
                         state_foreign_set(&one, 1, "LCKU", 4, aid, 32, hook_acc, 20);
@@ -313,19 +354,8 @@ int64_t cbak(uint32_t what)
                  * int64, so also test float_sign. Never store a negative LCK. */
                 if (neu < 0 || float_sign(neu) != 0)
                 {
-                    /* PW4-H01 A2: money applied + LCK under → forensic only, no RFD */
-                    state_foreign_set(0, 0, "PEN", 3, aid, 32, hook_acc, 20);
-                    {
-                        uint8_t sp = 0;
-                        if (state_foreign(&sp, 1, "SPEN", 4, aid, 32, hook_acc, 20) == 1)
-                        {
-                            sp = (uint8_t)(sp & (uint8_t)~SPEN_BIT_REFUND);
-                            if (sp == 0)
-                                state_foreign_set(0, 0, "SPEN", 4, aid, 32, hook_acc, 20);
-                            else
-                                state_foreign_set(&sp, 1, "SPEN", 4, aid, 32, hook_acc, 20);
-                        }
-                    }
+                    /* PW4-H01 A2: money applied + LCK under -> forensic only, no RFD */
+                    INFLIGHT_DONE();
                     {
                         uint8_t one = 1;
                         state_foreign_set(&one, 1, "LCKU", 4, aid, 32, hook_acc, 20);
@@ -352,19 +382,8 @@ int64_t cbak(uint32_t what)
             uint64_t prior_d = UINT64_FROM_BUF(amt);
             if (lck < prior_d)
             {
-                /* PW4-H01 A2: money applied + LCK under → forensic only, no RFD */
-                state_foreign_set(0, 0, "PEN", 3, aid, 32, hook_acc, 20);
-                {
-                    uint8_t sp = 0;
-                    if (state_foreign(&sp, 1, "SPEN", 4, aid, 32, hook_acc, 20) == 1)
-                    {
-                        sp = (uint8_t)(sp & (uint8_t)~SPEN_BIT_REFUND);
-                        if (sp == 0)
-                            state_foreign_set(0, 0, "SPEN", 4, aid, 32, hook_acc, 20);
-                        else
-                            state_foreign_set(&sp, 1, "SPEN", 4, aid, 32, hook_acc, 20);
-                    }
-                }
+                /* PW4-H01 A2: money applied + LCK under -> forensic only, no RFD */
+                INFLIGHT_DONE();
                 {
                     uint8_t one = 1;
                     state_foreign_set(&one, 1, "LCKU", 4, aid, 32, hook_acc, 20);
@@ -383,18 +402,7 @@ int64_t cbak(uint32_t what)
             }
         }
         /* LCK- ok: now clear PEN / SPEN REFUND bit */
-        state_foreign_set(0, 0, "PEN", 3, aid, 32, hook_acc, 20);
-        {
-            uint8_t sp = 0;
-            if (state_foreign(&sp, 1, "SPEN", 4, aid, 32, hook_acc, 20) == 1)
-            {
-                sp = (uint8_t)(sp & (uint8_t)~SPEN_BIT_REFUND);
-                if (sp == 0)
-                    state_foreign_set(0, 0, "SPEN", 4, aid, 32, hook_acc, 20);
-                else
-                    state_foreign_set(&sp, 1, "SPEN", 4, aid, 32, hook_acc, 20);
-            }
-        }
+        INFLIGHT_DONE();
         if (is_claim)
         {
             state_foreign_set(0, 0, "RFD", 3, aid, 32, hook_acc, 20);
@@ -536,18 +544,7 @@ int64_t cbak(uint32_t what)
             clear_inflight = 1;
         if (clear_inflight)
         {
-            state_foreign_set(0, 0, "PEN", 3, aid, 32, hook_acc, 20);
-            {
-                uint8_t sp = 0;
-                if (state_foreign(&sp, 1, "SPEN", 4, aid, 32, hook_acc, 20) == 1)
-                {
-                    sp = (uint8_t)(sp & (uint8_t)~SPEN_BIT_REFUND);
-                    if (sp == 0)
-                        state_foreign_set(0, 0, "SPEN", 4, aid, 32, hook_acc, 20);
-                    else
-                        state_foreign_set(&sp, 1, "SPEN", 4, aid, 32, hook_acc, 20);
-                }
-            }
+            INFLIGHT_DONE();
         }
     }
     state_set(0, 0, SBUF(txid));
@@ -597,7 +594,7 @@ int64_t hook(uint32_t reserved)
                             int64_t rc = slot_count(12);
                             if (rc <= 0)
                                 NOPE("Remit Amounts unreadable");
-                            /* KVT #13 (Andy locked): host gen-0 Remit carries at most
+                            /* KVT #13: host gen-0 Remit carries at most
                              * 3 Amounts. Above that fail closed with a named NOPE.
                              * Outer GUARD covers ri < rc with rc <= 3. */
                             if (rc > 3)
@@ -614,7 +611,7 @@ int64_t hook(uint32_t reserved)
                                     int64_t al = slot(SBUF(ab), 14);
                                     if (al == 8)
                                     {
-                                        /* Keep STAmount wire bits — match bal UINT64_FROM_BUF */
+                                        /* Keep STAmount wire bits - match bal UINT64_FROM_BUF */
                                         uint64_t d = UINT64_FROM_BUF(ab);
                                         if (d > 0ULL)
                                         {
@@ -783,9 +780,7 @@ int64_t hook(uint32_t reserved)
         int64_t clr_len = otxn_param(SBUF(clr_buf), "CLR", 3);
         if (clr_len != DOESNT_EXIST)
         {
-            if (clr_len != 1 ||
-                (clr_buf[0] != 0x01U && clr_buf[0] != 0x02U &&
-                 clr_buf[0] != 0x03U))
+            if (clr_len != 1 || clr_buf[0] == 0U || clr_buf[0] > 0x07U)
                 NOPE("CLR bad");
 
             uint8_t aid[32];
@@ -820,7 +815,7 @@ int64_t hook(uint32_t reserved)
              * No emit, no LCK write, no strand delete.
              * PEN prefix 0x50 0x45 0x4E. SPEN prefix 0x53 0x50 0x45 0x4E.
              * Namespace is the 32-byte AID. */
-            if (clr_buf[0] == 0x01U || clr_buf[0] == 0x03U)
+            if (clr_buf[0] & 0x01U)
             {
                 uint8_t pen_chk[32];
                 if (state_foreign(pen_chk, 32, "PEN", 3, aid, 32,
@@ -831,7 +826,7 @@ int64_t hook(uint32_t reserved)
                         NOPE("PEN write failed");
                 }
             }
-            if (clr_buf[0] == 0x02U || clr_buf[0] == 0x03U)
+            if (clr_buf[0] & 0x02U)
             {
                 uint8_t spen_chk = 0;
                 if (state_foreign(&spen_chk, 1, "SPEN", 4, aid, 32,
@@ -840,6 +835,18 @@ int64_t hook(uint32_t reserved)
                     if (state_foreign_set(0, 0, "SPEN", 4, aid, 32,
                                           hook_acc, 20) < 0)
                         NOPE("SPEN write failed");
+                }
+            }
+            /* Max bid: bit 0x04 drops a stuck IFR counter */
+            if (clr_buf[0] & 0x04U)
+            {
+                uint8_t ifr_chk[2];
+                if (state_foreign(ifr_chk, 2, "IFR", 3, aid, 32,
+                                  hook_acc, 20) == 2)
+                {
+                    if (state_foreign_set(0, 0, "IFR", 3, aid, 32,
+                                          hook_acc, 20) < 0)
+                        NOPE("IFR write failed");
                 }
             }
             DONE("marker cleared");
@@ -862,7 +869,7 @@ int64_t hook(uint32_t reserved)
             DONE("Payment passthrough");
     }
 
-    /* AID required to enter bid path; absent → passthrough (Sub / donation) */
+    /* AID required to enter bid path; absent -> passthrough (Sub / donation) */
     uint8_t aid[32];
     {
         int64_t alen = otxn_param(SBUF(aid), "AID", 3);
@@ -925,8 +932,10 @@ int64_t hook(uint32_t reserved)
         if (state_foreign(&lcku_chk, 1, "LCKU", 4, aid, 32, hook_acc, 20) == 1
             && lcku_chk != 0)
             NOPE("LCK under forensic");
-        /* A stranded outbid refund is the prior bidder's claim. It must
-         * not freeze later bids. PEN/SPEN still cover an in-flight emit. */
+        /* A stranded refund is the owed bidder's claim. It must not freeze
+         * later bids. PEN now means a claim (or a legacy refund) in
+         * flight. Tracked bid refunds use IFR and do not block. SPEN covers
+         * buy-now legs. */
         uint8_t pen_chk[32];
         if (state_foreign(pen_chk, 32, "PEN", 3, aid, 32, hook_acc, 20) == 32)
             NOPE("refund in flight");
@@ -948,7 +957,7 @@ int64_t hook(uint32_t reserved)
             NOPE("create TrustSet failed");
     }
 
-    /* Bidder gates: Remit ok, no DepositAuth, require-DT → DestinationTag */
+    /* Bidder gates: Remit ok, no DepositAuth, require-DT -> DestinationTag */
     uint32_t bid_wdt = 0;
     int bid_has_wdt = 0;
     {
@@ -979,7 +988,7 @@ int64_t hook(uint32_t reserved)
         }
     }
 
-    /* Currency: missing CUR → XAH */
+    /* Currency: missing CUR -> XAH */
     uint8_t currency[20];
     uint8_t issuer[20];
     int is_iou = 0;
@@ -1113,97 +1122,236 @@ int64_t hook(uint32_t reserved)
         BUFFER_EQUAL(is_self, otxn_acc, win, 20);
     }
 
-    /* Buy-now gate */
+    /* Max bid: self-raise total T = HIGH + amount (new max).
+     * new_high is what HIGH becomes: T for self, the payment otherwise. */
+    uint8_t new_high[8];
+    UINT64_TO_BUF(new_high, UINT64_FROM_BUF(pay_raw));
+    if (is_self)
+    {
+        if (is_iou)
+        {
+            int64_t h_xfl = (int64_t)UINT64_FROM_BUF(high_buf);
+            if (h_xfl <= 0 || float_sign(h_xfl) != 0)
+                NOPE("IOU amount invalid");
+            if (has_mb)
+            {
+                int64_t mb_xfl = (int64_t)UINT64_FROM_BUF(mb_buf);
+                if (float_compare(pay_xfl, mb_xfl,
+                                  COMPARE_GREATER | COMPARE_EQUAL) != 1)
+                    NOPE("raise below min increment");
+            }
+            int64_t t_xfl = float_sum(h_xfl, pay_xfl);
+            if (t_xfl < 0 || float_sign(t_xfl) != 0)
+                NOPE("max overflow");
+            /* strict greater (locked): a raise lost to XFL rounding is no raise */
+            if (float_compare(t_xfl, h_xfl, COMPARE_GREATER) != 1)
+                NOPE("raise below min increment");
+            UINT64_TO_BUF(new_high, (uint64_t)t_xfl);
+        }
+        else
+        {
+            uint64_t h = UINT64_FROM_BUF(high_buf);
+            if (has_mb && pay_drops < UINT64_FROM_BUF(mb_buf))
+                NOPE("raise below min increment");
+            uint64_t t = h + pay_drops;
+            if (t < h)
+                NOPE("max overflow");
+            UINT64_TO_BUF(new_high, t);
+        }
+    }
+
+    /* Buy-now gate (self compares the new max T, others the payment) */
     int bin_hit = 0;
     if (has_bn)
     {
         if (is_iou)
         {
             int64_t bn_xfl = (int64_t)UINT64_FROM_BUF(bn_buf);
-            if (float_compare(pay_xfl, bn_xfl, COMPARE_GREATER | COMPARE_EQUAL)
-                == 1)
+            if (float_compare((int64_t)UINT64_FROM_BUF(new_high), bn_xfl,
+                              COMPARE_GREATER | COMPARE_EQUAL) == 1)
                 bin_hit = 1;
         }
         else
         {
-            if (pay_drops >= UINT64_FROM_BUF(bn_buf))
+            if (UINT64_FROM_BUF(new_high) >= UINT64_FROM_BUF(bn_buf))
                 bin_hit = 1;
         }
     }
 
-    if (is_self && !bin_hit)
-        NOPE("already high bidder");
-
-    /* Min bid gates (skipped when buy-now hits — BN is its own floor) */
-    if (!bin_hit)
+    /* Max bid. C = visible price (PRC price when the PRC snapshot
+     * equals HIGH, else HIGH). inc = MB, else 1 drop (XAH), else strict
+     * greater (IOU). Decision for a non-self bid P below BN:
+     *   no high:  seat, price = SP if set else P
+     *   P <  C + inc: reject
+     *   P >  H:   outbid, price = min(P, H + inc), refund H to prior
+     *   P <= H:   underbid (tie goes to the incumbent), seat unchanged,
+     *             price = min(P + inc, H), refund P to the challenger
+     * Buy-now: price BN, refund H to prior (if any). Self: price C. */
+    uint64_t cur_price = 0ULL;
+    if (has_high)
     {
-        if (!has_high)
+        uint8_t prc_old[16];
+        cur_price = UINT64_FROM_BUF(high_buf);
+        if (state_foreign(prc_old, 16, "PRC", 3, aid, 32, hook_acc, 20) == 16
+            && UINT64_FROM_BUF(prc_old + 8) == UINT64_FROM_BUF(high_buf))
+            cur_price = UINT64_FROM_BUF(prc_old);
+    }
+
+    int is_underbid = 0;
+    uint64_t price_raw = UINT64_FROM_BUF(pay_raw);
+    if (bin_hit)
+        price_raw = UINT64_FROM_BUF(bn_buf);
+    else if (is_self)
+        price_raw = cur_price;
+    else if (!has_high)
+    {
+        /* First bid: >= SP (missing SP: any positive amount). Price SP. */
+        if (has_sp)
         {
-            /* First bid: >= SP (missing SP → 0; amount already > 0) */
-            if (has_sp)
+            if (is_iou)
             {
-                if (is_iou)
-                {
-                    int64_t sp_xfl = (int64_t)UINT64_FROM_BUF(sp_buf);
-                    if (float_compare(pay_xfl, sp_xfl,
-                                      COMPARE_GREATER | COMPARE_EQUAL) != 1)
-                        NOPE("below start price");
-                }
-                else
-                {
-                    if (pay_drops < UINT64_FROM_BUF(sp_buf))
-                        NOPE("below start price");
-                }
+                if (float_compare(pay_xfl, (int64_t)UINT64_FROM_BUF(sp_buf),
+                                  COMPARE_GREATER | COMPARE_EQUAL) != 1)
+                    NOPE("below start price");
             }
+            else if (pay_drops < UINT64_FROM_BUF(sp_buf))
+                NOPE("below start price");
+            price_raw = UINT64_FROM_BUF(sp_buf);
         }
-        else
+    }
+    else if (is_iou)
+    {
+        int64_t c_xfl = (int64_t)cur_price;
+        int64_t h_xfl = (int64_t)UINT64_FROM_BUF(high_buf);
+        int64_t mb_xfl = 0;
+        if (float_sign(c_xfl) != 0 || float_sign(h_xfl) != 0)
+            NOPE("IOU amount invalid");
+        if (has_mb)
         {
-            /* Later: MB ? >= HIGH+MB : > HIGH */
+            mb_xfl = (int64_t)UINT64_FROM_BUF(mb_buf);
+            int64_t need = float_sum(c_xfl, mb_xfl);
+            if (need < 0)
+                NOPE("min-bid overflow");
+            if (float_compare(pay_xfl, need, COMPARE_GREATER | COMPARE_EQUAL)
+                != 1)
+                NOPE("below min increment");
+        }
+        else if (float_compare(pay_xfl, c_xfl, COMPARE_GREATER) != 1)
+            NOPE("bid not above price");
+        if (float_compare(pay_xfl, h_xfl, COMPARE_GREATER) == 1)
+        {
+            /* outbid: min(P, H + inc). No MB: zero increment, price H. */
+            int64_t pr = h_xfl;
             if (has_mb)
             {
-                if (is_iou)
-                {
-                    int64_t high_xfl = (int64_t)UINT64_FROM_BUF(high_buf);
-                    int64_t mb_xfl = (int64_t)UINT64_FROM_BUF(mb_buf);
-                    int64_t need = float_sum(high_xfl, mb_xfl);
-                    if (need < 0)
-                        NOPE("min-bid overflow");
-                    if (float_compare(pay_xfl, need,
-                                      COMPARE_GREATER | COMPARE_EQUAL) != 1)
-                        NOPE("below min increment");
-                }
-                else
-                {
-                    uint64_t high = UINT64_FROM_BUF(high_buf);
-                    uint64_t mb = UINT64_FROM_BUF(mb_buf);
-                    uint64_t need = high + mb;
-                    if (need < high)
-                        NOPE("min-bid overflow");
-                    if (pay_drops < need)
-                        NOPE("below min increment");
-                }
+                pr = float_sum(h_xfl, mb_xfl);
+                if (pr < 0)
+                    NOPE("min-bid overflow");
+                if (float_compare(pr, pay_xfl, COMPARE_GREATER) == 1)
+                    pr = pay_xfl;
             }
-            else
+            price_raw = (uint64_t)pr;
+        }
+        else
+        {
+            /* underbid: min(P + inc, H). No MB: price P. */
+            int64_t pr = pay_xfl;
+            is_underbid = 1;
+            if (has_mb)
             {
-                if (is_iou)
-                {
-                    int64_t high_xfl = (int64_t)UINT64_FROM_BUF(high_buf);
-                    if (float_compare(pay_xfl, high_xfl, COMPARE_GREATER) != 1)
-                        NOPE("bid not above high");
-                }
-                else
-                {
-                    if (!(pay_drops > UINT64_FROM_BUF(high_buf)))
-                        NOPE("bid not above high");
-                }
+                pr = float_sum(pay_xfl, mb_xfl);
+                if (pr < 0)
+                    NOPE("min-bid overflow");
+                if (float_compare(pr, h_xfl, COMPARE_GREATER) == 1)
+                    pr = h_xfl;
             }
+            price_raw = (uint64_t)pr;
         }
     }
+    else
+    {
+        uint64_t h = UINT64_FROM_BUF(high_buf);
+        uint64_t inc = has_mb ? UINT64_FROM_BUF(mb_buf) : 1ULL;
+        uint64_t need = cur_price + inc;
+        if (need < cur_price)
+            NOPE("min-bid overflow");
+        if (pay_drops < need)
+        {
+            if (has_mb)
+                NOPE("below min increment");
+            NOPE("bid not above price");
+        }
+        if (pay_drops > h)
+        {
+            uint64_t pr = h + inc;
+            if (pr < h || pr > pay_drops)
+                pr = pay_drops;
+            price_raw = pr;
+        }
+        else
+        {
+            uint64_t pr = pay_drops + inc;
+            is_underbid = 1;
+            if (pr < pay_drops || pr > h)
+                pr = h;
+            price_raw = pr;
+        }
+    }
+    if (is_underbid)
+        UINT64_TO_BUF(new_high, UINT64_FROM_BUF(high_buf));
 
-    /* Outbid refund? Self buy-now also refunds prior seat to self (C03). */
-    int refund_prior = 0;
-    if (has_high && (!is_self || bin_hit))
-        refund_prior = 1;
+    uint8_t prc_new[16];
+    UINT64_TO_BUF(prc_new, price_raw);
+    UINT64_TO_BUF(prc_new + 8, UINT64_FROM_BUF(new_high));
+
+    /* Refund target. Outbid and buy-now: prior seat H to WIN with the
+     * stored WDT. Underbid: the payment back to the challenger with its
+     * own tag. A self-raise never refunds. */
+    int refund_prior = (has_high && !is_self && !is_underbid) ? 1 : 0;
+    int refund_any = (refund_prior || is_underbid) ? 1 : 0;
+    int ifr_track = (refund_any && !bin_hit) ? 1 : 0;
+    uint8_t* refund_to = is_underbid ? otxn_acc : win;
+    uint8_t refund_amt[8];
+    UINT64_TO_BUF(refund_amt, is_underbid ? UINT64_FROM_BUF(pay_raw)
+                                          : UINT64_FROM_BUF(high_buf));
+
+    /* IFR: refunds in flight. Underbids stop at the cap, outbids never. */
+    uint16_t ifr_n = 0;
+    if (ifr_track)
+    {
+        uint8_t ib[2];
+        if (state_foreign(ib, 2, "IFR", 3, aid, 32, hook_acc, 20) == 2)
+            ifr_n = (uint16_t)UINT16_FROM_BUF(ib);
+        if (is_underbid && ifr_n >= IFR_CAP)
+            NOPE("too many refunds in flight");
+        if (ifr_n == 0xFFFFU)
+            NOPE("IFR overflow");
+    }
+
+    /* Float guard (Q9): a refund-causing bid needs host XAH balance >=
+     * XAH LCK + 2 XAH (same read as the host outflow gate). IOU refunds
+     * only need this XAH headroom to emit. */
+    if (refund_any)
+    {
+        uint64_t lck = 0ULL;
+        uint8_t lb[8];
+        if (state(lb, 8, "LCK", 3) == 8)
+            lck = UINT64_FROM_BUF(lb);
+        uint8_t akl[34];
+        uint64_t bal = 0ULL;
+        if (util_keylet(SBUF(akl), KEYLET_ACCOUNT, hook_acc, 20, 0, 0, 0, 0)
+                == 34
+            && slot_set(SBUF(akl), 20) >= 0
+            && slot_subfield(20, sfBalance, 21) >= 0)
+        {
+            uint8_t bb[8];
+            if (slot(SBUF(bb), 21) == 8)
+                bal = UINT64_FROM_BUF(bb) & 0x3FFFFFFFFFFFFFFFULL;
+        }
+        uint64_t need = lck + 2000000ULL;
+        if (need < lck || bal < need)
+            NOPE("host float low");
+    }
 
     /* Buy-now: load URI + verify host custody before emits */
     uint8_t uri[32];
@@ -1259,10 +1407,16 @@ int64_t hook(uint32_t reserved)
         if (state_foreign(prior_wdt, 4, "WDT", 3, aid, 32, hook_acc, 20) == 4)
             has_prior_wdt = 1;
     }
+    else if (is_underbid && bid_has_wdt)
+    {
+        /* underbid refund goes to the challenger with its own tag */
+        UINT32_TO_BUF(prior_wdt, bid_wdt);
+        has_prior_wdt = 1;
+    }
 
     /* Prepare emits BEFORE state writes (fail-closed).
      * IOU: stock PREPARE_PAYMENT_SIMPLE_TRUSTLINE_SIZE is too small for
-     * EmitDetails on current Xahau (EMISSION_FAILURE) — use 512-byte
+     * EmitDetails on current Xahau (EMISSION_FAILURE) - use 512-byte
      * manual prepare (same pattern as V1 AuctionHook / min_iou_echo). */
     uint8_t refund_txn[512];
     uint32_t refund_len = 0;
@@ -1271,7 +1425,7 @@ int64_t hook(uint32_t reserved)
 
     {
         int emit_n = 0;
-        if (refund_prior)
+        if (refund_any)
             emit_n++;
         if (bin_hit)
             emit_n++;
@@ -1282,7 +1436,7 @@ int64_t hook(uint32_t reserved)
         }
     }
 
-    if (refund_prior)
+    if (refund_any)
     {
         uint32_t rfd_tag = 0;
         if (has_prior_wdt)
@@ -1291,7 +1445,7 @@ int64_t hook(uint32_t reserved)
         if (is_iou)
         {
             /* IOU prior refund = Remit Amounts (not Payment) */
-            int64_t high_xfl = (int64_t)UINT64_FROM_BUF(high_buf);
+            int64_t high_xfl = (int64_t)UINT64_FROM_BUF(refund_amt);
             if (float_compare(high_xfl, 0, COMPARE_GREATER) != 1)
                 NOPE("prior HIGH invalid");
             uint8_t sto[49];
@@ -1353,7 +1507,7 @@ int64_t hook(uint32_t reserved)
                 for (i = 0; GUARD(20), i < 20; ++i)
                 {
                     refund_txn[76 + i] = hook_acc[i];
-                    refund_txn[98 + i] = win[i];
+                    refund_txn[98 + i] = refund_to[i];
                 }
             }
             {
@@ -1396,12 +1550,13 @@ int64_t hook(uint32_t reserved)
         }
         else
         {
-            uint64_t high = UINT64_FROM_BUF(high_buf);
+            uint64_t high = UINT64_FROM_BUF(refund_amt);
             if (high == 0ULL)
                 NOPE("prior HIGH invalid");
             {
                 uint32_t sz = 0;
-                PREPARE_PAYMENT_SIMPLE(refund_txn, high, win, rfd_tag, 0, sz);
+                PREPARE_PAYMENT_SIMPLE(refund_txn, high, refund_to, rfd_tag, 0,
+                                       sz);
                 refund_len = sz;
             }
             if (refund_len == 0 || refund_len > 512U)
@@ -1409,7 +1564,7 @@ int64_t hook(uint32_t reserved)
         }
     }
 
-    /* Buy-now: prepare Remit of URIToken host → winner (otxn_acc) */
+    /* Buy-now: prepare Remit of URIToken host -> winner (otxn_acc) */
     if (bin_hit)
     {
         {
@@ -1479,7 +1634,7 @@ int64_t hook(uint32_t reserved)
             if (edlen < 105)
                 NOPE("Remit emit details failed");
             uint8_t* p = remit_txn + 118 + (uint32_t)edlen;
-            /* sfURITokenIDs VL: type=19 field=99 → 00 13 63, then len 0x20 + id */
+            /* sfURITokenIDs VL: type=19 field=99 -> 00 13 63, then len 0x20 + id */
             *p++ = 0x00U;
             *p++ = 0x13U;
             *p++ = 0x63U;
@@ -1513,10 +1668,18 @@ int64_t hook(uint32_t reserved)
     }
 
     /* -------- State writes -------- */
-    if (state_foreign_set(pay_raw, 8, "HIGH", 4, aid, 32, hook_acc, 20) != 8)
-        NOPE("HIGH write failed");
-    if (state_foreign_set(otxn_acc, 20, "WIN", 3, aid, 32, hook_acc, 20) != 20)
-        NOPE("WIN write failed");
+    /* Underbid: the seat (HIGH, WIN, WDT) stays with the incumbent */
+    if (!is_underbid)
+    {
+        if (state_foreign_set(new_high, 8, "HIGH", 4, aid, 32, hook_acc, 20)
+            != 8)
+            NOPE("HIGH write failed");
+        if (state_foreign_set(otxn_acc, 20, "WIN", 3, aid, 32, hook_acc, 20)
+            != 20)
+            NOPE("WIN write failed");
+    }
+    if (state_foreign_set(prc_new, 16, "PRC", 3, aid, 32, hook_acc, 20) != 16)
+        NOPE("PRC write failed");
 
     {
         uint32_t bcnt = 0;
@@ -1552,7 +1715,7 @@ int64_t hook(uint32_t reserved)
             if (state(lb, 8, iou_lck_key, 32) == 8)
                 lck_xfl = (int64_t)UINT64_FROM_BUF(lb);
             {
-                /* KVT #12 (Andy locked): fail closed on any bad IOU float.
+                /* KVT #12: fail closed on any bad IOU float.
                  * float_sum error codes are negative int64. A valid negative
                  * XFL is still a positive int64 (XFL sign bit clear), so
                  * neu < 0 alone cannot see it. Check the stored LCK and the
@@ -1585,7 +1748,11 @@ int64_t hook(uint32_t reserved)
     }
 
     /* WDT: store new bidder DT if require-DT; else clear prior WDT key */
-    if (bid_has_wdt)
+    if (is_underbid)
+    {
+        /* incumbent keeps its WDT */
+    }
+    else if (bid_has_wdt)
     {
         uint8_t wb[4];
         UINT32_TO_BUF(wb, bid_wdt);
@@ -1613,7 +1780,7 @@ int64_t hook(uint32_t reserved)
             NOPE("TBD write failed");
     }
 
-    /* C02: do NOT write ST=2 / BNW / clear URI / TBN here — URI cbak does.
+    /* C02: do NOT write ST=2 / BNW / clear URI / TBN here - URI cbak does.
      * Set SPEN expected bits so competing bids / settle are blocked. */
     if (bin_hit)
     {
@@ -1624,21 +1791,21 @@ int64_t hook(uint32_t reserved)
             NOPE("SPEN write failed");
     }
 
-    if (refund_prior)
+    if (refund_any)
     {
         uint8_t emh[32];
         if (emit(SBUF(emh), refund_txn, refund_len) != 32)
             NOPE("refund emit failed");
-        /* Link emit→AID for cbak: map[emithash]=AID|amt|prior|wdt|flags */
+        /* Link emit->AID for cbak: map[emithash]=AID|amt|prior|wdt|flags */
         {
             uint8_t mapv[65];
             int i;
             for (i = 0; GUARD(32), i < 32; ++i)
                 mapv[i] = aid[i];
             for (i = 0; GUARD(8), i < 8; ++i)
-                mapv[32 + i] = high_buf[i];
+                mapv[32 + i] = refund_amt[i];
             for (i = 0; GUARD(20), i < 20; ++i)
-                mapv[40 + i] = win[i];
+                mapv[40 + i] = refund_to[i];
             for (i = 0; GUARD(4), i < 4; ++i)
                 mapv[60 + i] = prior_wdt[i];
             mapv[64] = 0;
@@ -1646,14 +1813,20 @@ int64_t hook(uint32_t reserved)
                 mapv[64] |= RMAP_HAS_WDT;
             if (is_iou)
                 mapv[64] |= RMAP_IS_IOU;
+            if (ifr_track)
+                mapv[64] |= RMAP_IFR;
             if (state_set(mapv, 65, SBUF(emh)) != 65)
                 NOPE("refund map write failed");
-            /* Buy-now multi-leg uses SPEN; single-leg refund still uses PEN */
-            if (!bin_hit)
+            /* Buy-now multi-leg uses SPEN. tracked bid refunds
+             * count in IFR and never write PEN. */
+            if (ifr_track)
             {
-                if (state_foreign_set(emh, 32, "PEN", 3, aid, 32,
-                                      hook_acc, 20) != 32)
-                    NOPE("PEN write failed");
+                uint8_t ib[2];
+                uint16_t n = (uint16_t)(ifr_n + 1U);
+                UINT16_TO_BUF(ib, n);
+                if (state_foreign_set(ib, 2, "IFR", 3, aid, 32, hook_acc, 20)
+                    != 2)
+                    NOPE("IFR write failed");
             }
         }
     }
@@ -1689,7 +1862,11 @@ int64_t hook(uint32_t reserved)
         DONE("Buy-now accepted");
     }
 
+    if (is_underbid)
+        DONE("Bid did not exceed current max bid, payment returned");
     if (refund_prior)
-        DONE("Bid accepted with prior refund");
-    DONE("Bid accepted");
+        DONE("Max bid accepted with prior refund");
+    if (is_self)
+        DONE("Max bid raised");
+    DONE("Max bid accepted");
 }

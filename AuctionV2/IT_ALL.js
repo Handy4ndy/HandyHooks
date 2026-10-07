@@ -1,5 +1,5 @@
 /**
- * Auction House V2 — ONE runner for everything (integration tests).
+ * Auction House V2 - ONE runner for everything (integration tests).
  * Sequentially runs:
  *   1) Subscription/IT_SUB.js
  *   2) Create/IT_CREATE.js

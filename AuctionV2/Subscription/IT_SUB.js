@@ -1,5 +1,5 @@
 /**
- * Auction House V2 AuctionSub — full variation matrix (xahau.js).
+ * Auction House V2 AuctionSub - full variation matrix (xahau.js).
  * Writes only IT_SUB.json next to this script.
  *
  * Run: node IT_SUB.js
@@ -490,7 +490,7 @@ async function main() {
     Amount: '1000000',
   })), { engine: 'tesSUCCESS', msg: 'Payment passthrough' }));
 
-  /* KVT Finding 3: SUB + AID on same Payment → reject (one purpose) */
+  /* KVT Finding 3: SUB + AID on same Payment -> reject (one purpose) */
   record(expectCase('sub_and_aid_both_set', await softSubmit(submitAndWait(client, seller, {
     TransactionType: 'Payment',
     Account: seller.classicAddress,
@@ -743,7 +743,7 @@ async function main() {
         want: { SUBEXP: 1, ACTIVE: '>=1', CAP: 1 },
         gotMsg: JSON.stringify(stStill),
       });
-      /* Finalise not in Sub harness — prove ACTIVE==0 path (GRANT sets active 0). */
+      /* Finalise not in Sub harness - prove ACTIVE==0 path (GRANT sets active 0). */
       OUT.c04_note = 'revoke_after_finalise_ok: Finalise not installed in Sub integration harness; used ACTIVE=0 GRANT path';
       const gr = await invokeAdmin(client, admin, host, 'GRANT', accHex(seller2.classicAddress));
       record(expectCase('c04_grant_seller2_active0', gr, { engine: 'tesSUCCESS', msg: 'GRANT applied' }));

@@ -1,11 +1,11 @@
 /**
- * Auction House V2 — AuctionSub.c
+ * Auction House V2 - AuctionSub.c
  *
  * Seller subscription gate (XAH only). One fat file; hookapi.h only.
  * All logic in hook()/cbak() (Hooks guard: no extra C functions).
  *
  * Install param:
- *   ADMIN (20) — sole account that may change settings via Invoke
+ *   ADMIN (20) - sole account that may change settings via Invoke
  *
  * Admin Invokes (one param per Invoke):
  *   SUBPRICE  (8)  uint64 BE drops, > 0
@@ -14,8 +14,8 @@
  *   AUCCAP    (2)  uint16 BE max active auctions per seller, >= 1
  *   TREASURY  (20) account that receives the split (must not be host)
  *   FEE       (2)  uint16 BE basis points 0..5000 (Finalise seller fee; shared ns)
- *   GRANT     (20) seller account — extend one SUBPERIOD (same as paid)
- *   REVOKE    (20) seller account — clear seller window (NOPE if ACTIVE > 0)
+ *   GRANT     (20) seller account - extend one SUBPERIOD (same as paid)
+ *   REVOKE    (20) seller account - clear seller window (NOPE if ACTIVE > 0)
  *
  * Seller Payment to host with otxn param SUB:
  *   Exact SUBPRICE XAH; extend expiry; snapshot AUCCAP into seller state;
@@ -30,13 +30,13 @@
  *
  * Fail closed: SUB / GRANT rollback until SUBPRICE, SUBPERIOD, SUBSPLIT,
  * AUCCAP, and TREASURY are all set.
- * Treasury emit fail → rollback whole SUB.
+ * Treasury emit fail -> rollback whole SUB.
  */
 #define HAS_CALLBACK
 #include "hookapi.h"
 
 /* KVT #10. Published Sub definition default ADMIN
- * (HookHash F825F314…A8606363 parameter ADMIN).
+ * (HookHash F825F314...A8606363 parameter ADMIN).
  * raMjZ7ayJ3txQY75vQWr8RTzErAcUD3gee
  * hook_param returns these bytes when the installer does not override.
  * An override to any other account still passes. */
@@ -186,7 +186,7 @@ int64_t hook(uint32_t reserved)
                                     int64_t al = slot(SBUF(ab), 14);
                                     if (al == 8)
                                     {
-                                        /* Keep STAmount wire bits — match bal UINT64_FROM_BUF */
+                                        /* Keep STAmount wire bits - match bal UINT64_FROM_BUF */
                                         uint64_t d = UINT64_FROM_BUF(ab);
                                         if (d > 0ULL)
                                         {
